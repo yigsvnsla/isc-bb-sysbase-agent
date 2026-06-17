@@ -1,0 +1,68 @@
+spring:
+    mvc:
+        apiversion:
+            use:
+                header: API-Version
+    application:
+        name: sysbase-agent
+    config:
+        import: "optional:file:.env[.properties]"
+    datasource:
+        url: jdbc:postgresql://${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
+        username: ${POSTGRES_USER}
+        password: ${POSTGRES_PASSWORD}
+    ai:
+        model:
+            chat: openai
+            embedding: transformers
+        openai:
+            api-key: ${NVIDIA_API_KEY}
+            base-url: https://integrate.api.nvidia.com/v1
+            chat:
+                model: deepseek-ai/deepseek-v4-flash
+                temperature: 1.0
+                max-tokens: 16384
+                # ── Thinking mode (razonamiento) ──
+                # Descomentar para activar:
+                # options:
+                #     - chat_template_kwargs.thinking: true
+                #     - chat_template_kwargs.reasoning_effort: high
+        vectorstore:
+            pgvector:
+                index-type: HNSW
+                dimensions: 384
+                initialize-schema: true
+        embedding:
+            transformer:
+                tokenizer:
+                    options:
+                        padding: true
+
+
+    cache:
+        type: redis
+        redis:
+            time-to-live: 10m
+            cache-null-values: false
+        cache-names: sp_source, sp_search
+
+    data:
+        redis:
+            host: ${REDIS_HOST:localhost}
+            port: ${REDIS_PORT:6379}
+            timeout: 2s
+            lettuce:
+                pool:
+                    max-active: 8
+                    max-idle: 4
+                    min-idle: 2
+
+logging:
+    level:
+        com.isc.bb.sysbase_agent: DEBUG
+        org.springframework.ai: DEBUG
+        org.springframework.jdbc: DEBUG
+
+server:
+    servlet:
+        context-path: /api

@@ -1,0 +1,5 @@
+{"properties": [{
+  "name": "spring.ai.embedding.transformer.tokenizer.options.padding",
+  "type": "java.lang.Map",
+  "description": "A description for 'spring.ai.embedding.transformer.tokenizer.options.padding'"
+}]}
