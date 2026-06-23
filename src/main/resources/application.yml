@@ -57,6 +57,10 @@ spring:
                     max-idle: 4
                     min-idle: 2
 
+app:
+    knowledge-base:
+        pdf-dir: ${KNOWLEDGE_BASE_PDF_DIR:classpath:static/documents}
+
 logging:
     level:
         com.isc.bb.sysbase_agent: DEBUG
