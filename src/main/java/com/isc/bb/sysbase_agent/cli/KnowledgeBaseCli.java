@@ -2,8 +2,7 @@ package com.isc.bb.sysbase_agent.cli;
 
 import java.nio.file.Path;
 
-import org.springframework.ai.vectorstore.SearchRequest;
-import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.shell.core.command.annotation.Command;
 import org.springframework.shell.core.command.annotation.Option;
 import org.springframework.stereotype.Component;
@@ -14,11 +13,11 @@ import com.isc.bb.sysbase_agent.loader.KnowledgeBaseLoader;
 public class KnowledgeBaseCli {
 
     private final KnowledgeBaseLoader loader;
-    private final VectorStore vectorStore;
+    private final JdbcTemplate jdbcTemplate;
 
-    public KnowledgeBaseCli(KnowledgeBaseLoader loader, VectorStore vectorStore) {
+    public KnowledgeBaseCli(KnowledgeBaseLoader loader, JdbcTemplate jdbcTemplate) {
         this.loader = loader;
-        this.vectorStore = vectorStore;
+        this.jdbcTemplate = jdbcTemplate;
     }
 
     @Command(name = "kb-index", description = "Indexa PDFs en la base de conocimientos")
@@ -39,10 +38,7 @@ public class KnowledgeBaseCli {
 
     @Command(name = "kb-status", description = "Muestra estado de la base de conocimientos")
     public String status() {
-        var results = vectorStore.similaritySearch(SearchRequest.builder()
-                .query("dummy").topK(1).similarityThresholdAll().build());
-        var totalDocs = vectorStore.similaritySearch(SearchRequest.builder()
-                .query("").topK(10_000).similarityThresholdAll().build());
-        return "Base de conocimientos: %d chunks indexados".formatted(totalDocs.size());
+        var count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM vector_store", Long.class);
+        return "Base de conocimientos: %d chunks indexados".formatted(count != null ? count : 0);
     }
 }

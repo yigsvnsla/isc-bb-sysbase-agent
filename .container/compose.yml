@@ -39,5 +39,25 @@ services:
         reservations:
           memory: 64M
 
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: sp-open-webui
+    ports:
+      - "3000:8080"
+    volumes:
+      - open-webui-data:/app/backend/data
+    environment:
+      - OLLAMA_BASE_URL=
+    restart: unless-stopped
+    profiles:
+      - web
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 512M
+
 volumes:
   postgres-data-sp-docs-pg:
+  open-webui-data:

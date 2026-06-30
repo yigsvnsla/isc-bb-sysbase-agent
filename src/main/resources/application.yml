@@ -1,8 +1,4 @@
 spring:
-    mvc:
-        apiversion:
-            use:
-                header: API-Version
     application:
         name: sysbase-agent
     config:
@@ -16,17 +12,20 @@ spring:
             chat: openai
             embedding: transformers
         openai:
-            api-key: ${NVIDIA_API_KEY}
-            base-url: https://integrate.api.nvidia.com/v1
+            api-key: ${IA_API_KEY}
+            base-url: ${IA_API_BASE_URL}
             chat:
-                model: deepseek-ai/deepseek-v4-flash
-                temperature: 1.0
-                max-tokens: 16384
+                model: ${IA_API_MODEL}
+                temperature: ${IA_API_TEMPERATURE} 
+                max-tokens: ${IA_API_MAX_TOKEN}
                 # ── Thinking mode (razonamiento) ──
                 # Descomentar para activar:
                 # options:
                 #     - chat_template_kwargs.thinking: true
                 #     - chat_template_kwargs.reasoning_effort: high
+            options:
+                connect-timeout: 30s
+                read-timeout: 120s
         vectorstore:
             pgvector:
                 index-type: HNSW
@@ -68,5 +67,6 @@ logging:
         org.springframework.jdbc: DEBUG
 
 server:
+    port: ${PORT:8080}
     servlet:
         context-path: /api

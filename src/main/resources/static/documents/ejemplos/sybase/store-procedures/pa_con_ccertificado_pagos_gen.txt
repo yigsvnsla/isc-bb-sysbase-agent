@@ -1,0 +1,273 @@
+------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------
+-- Se agrega una logica de opcion porque no hay TRN para el llamado de 'sp_ult_dia_habil_ant'
+-- esto se usara para poder devolver la fecha proceso actual y la ultima fecha proceso
+CREATE PROCEDURE dbo.pa_con_ccertificado_pagos_gen
+(
+    @e_fecha            DATETIME,
+    @e_causa            VARCHAR(10),
+    @e_usuario          VARCHAR(10),
+    @e_oficina          VARCHAR(10),
+    @e_pagina           INT,
+    @e_limite           INT,
+    @e_opcion           VARCHAR(1)
+)
+AS
+BEGIN
+
+------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------
+
+    SET NOCOUNT ON
+
+    -- BUSQUEDA CRTF_PAGOS
+    DECLARE @v_fecha_anterior   DATETIME,
+            @v_return           INT,
+            @v_incio            INT,
+            @v_fin              INT
+
+    SET     @v_incio = ((@e_pagina - 1) * @e_limite + 1)
+    SET     @v_fin   = (@e_pagina * @e_limite)
+
+------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------
+
+    -- Validamos las Opciones disponibles
+    -- F = CONSULTAR ULTIMA FECHA PROCESO
+    -- C = CONSULTAR ULTIMOS PAGOS DEL USUARIO
+
+    IF @e_opcion NOT IN ('F', 'C')
+    BEGIN
+        SET     @v_return = 99999
+        PRINT   'ERROR: Opcion no valida'
+        RETURN  @v_return 
+    END
+
+------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------
+
+    -- Extraemos fecha de ultimo dia habil
+    EXEC cob_cuentas..sp_ult_dia_habil_ant
+        @i_fecha      = @e_fecha,
+        @i_fch_habil  = @v_fecha_anterior OUT
+    
+------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------
+
+    IF @e_opcion = 'F'
+    BEGIN
+        SELECT  CONVERT(VARCHAR, @e_fecha , 101)           AS '@s_fecha_proceso', 
+                CONVERT(VARCHAR, @v_fecha_anterior, 101)   AS '@s_fecha_proceso_anterior'
+        RETURN 0
+    END
+
+
+------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------
+
+    -- Control tablas temporal catalogo de transacciones
+    IF OBJECT_ID('tempdb.dbo.#reca_tmp_trx_serv') IS NOT NULL DROP TABLE #reca_tmp_trx_serv
+
+    -- Match con el catalgo donse se recatan los tipos de transaccion, 
+    SELECT  'codigo' = catalogo.codigo,
+            'valor'  = trx.tn_descripcion
+    INTO    #reca_tmp_trx_serv
+    FROM (
+        SELECT      c.codigo
+        FROM        cobis..cl_catalogo  c
+        INNER JOIN  cobis..cl_tabla     t
+        ON          t.codigo    = c.tabla
+        WHERE       t.tabla     = 'cl_trx_emp_pub'
+        AND         c.estado    = 'V'
+        UNION
+        SELECT      c.codigo
+        FROM        cobis..cl_catalogo  c
+        INNER JOIN  cobis..cl_tabla     t
+        ON          t.codigo    = c.tabla
+        WHERE       t.tabla    = 'cl_trx_emp_pri'
+        AND         c.estado    = 'V'
+    ) AS catalogo
+    INNER JOIN cobis..cl_ttransaccion trx on (trx.tn_trn_code = CONVERT(INT, catalogo.codigo))
+
+    IF @@error <> 0 
+    BEGIN
+        SET     @v_return = 5004011
+        PRINT   'ERROR LECTURA CATALOGO sv_reca_concilia_trx_banred'
+        RETURN  @v_return 
+    END
+
+------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------
+
+    -- Control tablas temporal transacciones del dia
+    IF OBJECT_ID('tempdb.dbo.#reca_tmp_servicio') IS NOT NULL DROP TABLE #reca_tmp_servicio    
+
+    SELECT  ts_ssn_corr,
+            ts_correccion,
+            ts_hora,
+            ts_causa,
+            ts_tsfecha,
+            ts_tipo_transaccion,
+            ts_oficina,
+            ts_secuencial,
+            ts_referencia,
+            ts_nombre,
+            ts_saldo,
+            ts_monto,
+            ts_valor,
+            ts_contratado
+    INTO    #reca_tmp_servicio
+    FROM    cob_cuentas..cc_tran_servicio
+    WHERE   ts_oficina                      = CONVERT(INT, @e_oficina)
+    AND     ts_causa                        = @e_causa
+    AND     ts_tsfecha                      = @e_fecha
+    AND     ts_usuario                      = @e_usuario
+    AND     ts_tipo_chequera                IN  ('VEN', 'VENEL')
+    
+    UNION
+
+    SELECT  ts_ssn_corr,
+            ts_correccion,
+            ts_hora,
+            ts_causa,
+            ts_tsfecha,
+            ts_tipo_transaccion,
+            ts_oficina,
+            ts_secuencial,
+            ts_referencia,
+            ts_nombre,
+            ts_saldo,
+            ts_monto,
+            ts_valor,
+            ts_contratado
+    FROM    cob_cuentas..cc_tran_servicio_resp
+    WHERE   ts_oficina                      = CONVERT(INT, @e_oficina)
+    AND     ts_causa                        = @e_causa
+    AND     ts_tsfecha                      = @v_fecha_anterior
+    AND     ts_usuario                      = @e_usuario
+    AND     ts_tipo_chequera                IN  ('VEN', 'VENEL')
+
+    --SET ROWCOUNT 0
+
+    IF @@error <> 0 
+    BEGIN
+        SET     @v_return = 33333
+        PRINT   'ERROR: Insertar Transacciones del dia'
+        RETURN  @v_return 
+    END
+
+------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------
+
+    -- Control tablas temporal transacciones reversadas
+    IF OBJECT_ID('tempdb.dbo.#reca_tmp_trx_reversadas') IS NOT NULL DROP TABLE #reca_tmp_trx_reversadas
+
+    SELECT  ts_ssn_corr
+    INTO    #reca_tmp_trx_reversadas
+    FROM    #reca_tmp_servicio
+    WHERE   ts_correccion = 'S'
+
+    IF @@error <> 0 
+    BEGIN
+        SET     @v_return = 33333
+        PRINT   'ERROR: Insertar Transacciones Reversadas'
+        RETURN  @v_return 
+    END
+
+------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------
+
+    -- Control tablas temporal transacciones pagadas
+    IF OBJECT_ID('tempdb.dbo.#reca_tmp_trx') IS NOT NULL DROP TABLE #reca_tmp_trx
+
+    CREATE TABLE #reca_tmp_trx (
+                crtf_indice                 INTEGER IDENTITY NOT NULL,
+                crtf_tipo_transaccion       VARCHAR(50)          NULL,
+                crtf_ciudad                 VARCHAR(50)          NULL,
+                crtf_nombre_empresa         VARCHAR(50)          NULL,
+                crtf_nombre_cliente         VARCHAR(50)          NULL,
+                crtf_suministro             VARCHAR(50)          NULL,
+                crtf_fecha_pago             VARCHAR(50)          NULL, 
+                crtf_valor                  MONEY
+    )
+    INSERT INTO #reca_tmp_trx (
+                crtf_tipo_transaccion,
+                crtf_ciudad,
+                crtf_nombre_empresa,
+                crtf_nombre_cliente,
+                crtf_suministro,
+                crtf_fecha_pago, 
+                crtf_valor
+    )
+    SELECT      trx.valor,                        
+                ciudad.ci_descripcion,
+                empresa.pe_nombre,
+                servicio.ts_nombre,
+                servicio.ts_referencia,
+                servicio.ts_hora,
+                (
+                    ISNULL(servicio.ts_saldo, 0) + 
+                    ISNULL(servicio.ts_monto, 0) +
+                    ISNULL(servicio.ts_valor, 0) + 
+                    ISNULL(servicio.ts_contratado, 0)
+                )
+    FROM        #reca_tmp_servicio servicio
+    RIGHT JOIN  cobis..cl_oficina oficina               ON oficina.of_oficina       = servicio.ts_oficina
+    RIGHT JOIN  cobis..cl_ciudad ciudad                 ON ciudad.ci_ciudad         = oficina.of_ciudad
+    RIGHT JOIN  cob_pagos.dbo.pg_person_empresa empresa ON empresa.pe_empresa       = CONVERT(INT, servicio.ts_causa)
+    LEFT  JOIN  #reca_tmp_trx_reversadas reversadas     ON servicio.ts_secuencial   = reversadas.ts_ssn_corr
+    INNER JOIN  #reca_tmp_trx_serv trx                  ON trx.codigo               = CONVERT(VARCHAR, servicio.ts_tipo_transaccion) 
+    WHERE       reversadas.ts_ssn_corr                  IS NULL
+    AND         servicio.ts_correccion                  = 'N'
+    ORDER BY    servicio.ts_hora                        DESC
+
+    IF @@error <> 0 
+    BEGIN
+        SET     @v_return = 33333
+        PRINT   'ERROR: Insertar Transacciones Empresa'
+        RETURN  @v_return 
+    END
+
+------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------
+
+    SELECT      
+                'Fecha de Pago'     = crtf_fecha_pago,
+                'Suministro'        = crtf_suministro,
+                'Nombre Cliente'    = crtf_nombre_cliente,
+                'Valor'             = crtf_valor,
+                'Nombre Empresa'    = crtf_nombre_empresa,
+                'Tipo Recaudacion'  = crtf_tipo_transaccion,
+                'Ciudad'            = crtf_ciudad
+
+    FROM        #reca_tmp_trx crtf
+
+    WHERE       crtf.crtf_indice
+
+    BETWEEN     @v_incio AND @v_fin
+    
+------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------
+
+    -- Control tablas temporales
+    IF OBJECT_ID('tempdb.dbo.#reca_tmp_trx_serv')       IS NOT NULL DROP TABLE #reca_tmp_trx_serv
+
+    -- Control tablas temporal transacciones del dia
+    IF OBJECT_ID('tempdb.dbo.#reca_tmp_servicio')       IS NOT NULL DROP TABLE #reca_tmp_servicio
+
+    -- Control tablas temporal transacciones del dia anterior
+    IF OBJECT_ID('tempdb.dbo.#reca_tmp_servicio_resp')  IS NOT NULL DROP TABLE #reca_tmp_servicio_resp
+
+    -- Control tablas temporales
+    IF OBJECT_ID('tempdb.dbo.#reca_tmp_trx_reversadas') IS NOT NULL DROP TABLE #reca_tmp_trx_reversadas
+
+    -- Control tablas temporal transacciones pagadas
+    IF OBJECT_ID('tempdb.dbo.#reca_tmp_trx_pagadas')    IS NOT NULL DROP TABLE #reca_tmp_trx_pagadas
+
+    -- Control tablas temporal transacciones pagadas
+    IF OBJECT_ID('tempdb.dbo.#reca_tmp_trx')            IS NOT NULL DROP TABLE #reca_tmp_trx
+    
+------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------
+    RETURN 0
+END

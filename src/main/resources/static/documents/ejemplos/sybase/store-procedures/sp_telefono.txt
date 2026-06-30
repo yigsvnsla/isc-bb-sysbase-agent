@@ -1,0 +1,1158 @@
+create proc dbo.sp_telefono (
+	@s_ssn            int         = null,
+	@s_user           login       = null,
+	@s_term           varchar(30) = null,
+	@s_date           datetime    = null,
+	@s_srv            varchar(30) = null,
+	@s_lsrv           varchar(30) = null,
+	@s_ofi            smallint    = null,
+	@s_rol            smallint    = null,
+	@s_org_err        char(1)     = null,
+	@s_error          int         = null,
+	@s_sev            tinyint     = null,
+	@s_msg            descripcion = null,
+	@s_org            char(1)     = null,
+	@p_alterno        int         = null,
+	@t_debug          char(1)     = 'N',
+	@t_file           varchar(10) = null,
+	@t_from           varchar(32) = null,
+	@t_trn            int         = null,
+	
+	@i_operacion      char(1),
+    @i_no_cobis       char(1)     = 'N',
+    @i_mensaje        char(1)     = 'S',
+	
+    @i_producto       tinyint     = null,
+	@i_ente           int         = null,
+	@i_direccion      tinyint     = null,
+	@i_secuencial     tinyint     = null,
+	@i_valor          varchar(12) = null,
+	@i_tipo_telefono  char(1)     = null,
+	@i_tipo_cliente   char(1)     = null,
+	@i_pertenece	  char(1)     = null,
+	@i_extension      varchar(20) = null,
+    @i_comentario     varchar(254)= null,
+	
+    @i_ind_act_presenc char(1)   = 'N',
+    @i_tipo_dir       catalogo    = null,	--ref19
+    @o_num_filas      tinyint     = null out,
+    @o_secuencial     tinyint     = null out,
+    @o_msj_error      varchar(132)= null out,
+    @i_canal          varchar(10)  = null,	--ref20
+	@i_envio_notifica char(1)      = 'S'	--ref20	--Cuando sean actualizaciones masivas se debe enviar el valor "N"
+)
+as
+declare	@w_sp_name          varchar(32),
+        @w_today            datetime,
+	@w_return           int,
+	@w_codigo           int,
+        @w_num              int,
+	@w_secuencial       tinyint,
+        @w_desc_tipo        descripcion,
+        @w_region           varchar(2),
+        @w_desc_region      descripcion,
+	@w_valor            varchar(12),
+	@w_tipo_telefono    char(1),
+        @w_extension        varchar(20),
+        @w_comentario       varchar(254),
+        @w_subtipo          char(1),
+        --@w_verificado       char(1),
+	@w_dig_cel	    tinyint,
+	@w_pertenece	    char(1),	
+	@v_valor            varchar(12),
+	@v_tipo_telefono    char(1),
+        @v_extension        varchar(20),
+        @v_comentario       varchar(254),
+        --@v_verificado       char(1),
+	@v_pertenece	    char(1),
+
+	@w_fecha_reg        datetime,	    --ref20
+	@w_fecha_crea_cli   datetime,	    --ref20
+	@w_servicio         varchar(40),    --ref20
+	@w_idcliente        varchar(30),    --ref20
+	@w_nombrecli 	    varchar(64),    --ref20
+	@w_p_apellido       varchar(64),    --ref20
+	@w_s_apellido       varchar(64),    --ref20
+	@w_canal            varchar(10),    --ref20
+	@w_mail 	    varchar(64)     --ref20
+	,@w_fecha			varchar(10),	--ref21
+	@w_hora				varchar(10),	--ref21
+	@w_medio			varchar(70),	--ref21
+	@w_idcli_enm		varchar(30),	--ref21
+	@w_nombrecliente 	varchar(64),		--ref21
+	@w_nemonico 		varchar(30),
+	@w_celular			varchar(20)
+
+set nocount on
+
+
+select @w_sp_name = 'sp_telefono',
+       @w_today = getdate()
+       
+       
+       
+insert into cobis..tmp_log_phol2 values (@w_sp_name,@s_user, @i_valor ,@i_ente,0)
+       
+select @w_fecha_reg = convert(varchar(10), @w_today, 101)   --ref20
+
+if @t_debug = 'S'
+begin
+  exec cobis..sp_begin_debug @t_file = @t_file
+   select '/** Stored Procedure **/ '  = @w_sp_name,
+   s_ssn            = @s_ssn,
+   s_user           = @s_user,
+   s_term           = @s_term,
+   s_date           = @s_date,
+   s_srv            = @s_srv,
+   s_lsrv           = @s_lsrv,
+   s_ofi            = @s_ofi,
+   s_rol            = @s_rol,
+   s_org_err        = @s_org_err,
+   s_error          = @s_error,
+   s_sev            = @s_sev,
+   s_msg            = @s_msg,
+   s_org            = @s_org,
+   p_alterno        = @p_alterno,
+   t_trn            = @t_trn,
+   t_file           = @t_file,
+   t_from           = @t_from,
+   i_operacion      = @i_operacion,
+   i_no_cobis       = @i_no_cobis,
+   i_mensaje        = @i_mensaje,
+   i_producto       = @i_producto,
+   i_ente           = @i_ente,
+   i_direccion      = @i_direccion,
+   i_secuencial     = @i_secuencial,
+   i_valor          = @i_valor,
+   i_tipo_telefono  = @i_tipo_telefono,
+   i_extension      = @i_extension,
+   i_comentario     = @i_comentario,
+   i_tipo_dir       = @i_tipo_dir,	--ref19
+   i_canal          = @i_canal,			--ref20
+   i_envio_notifica = @i_envio_notifica		--ref20
+
+exec cobis..sp_end_debug
+end
+
+/** Insert **/
+If @i_operacion = 'I'
+begin
+if @t_trn = 111
+begin
+  --ref20 Ini
+  if @i_ente = 0
+     begin
+       /* 'No existe ente' */
+       select @w_num = 101042
+       goto mensaje_error
+     end
+  --ref20 Fin
+
+  /* Verificacion de claves foraneas */
+  if exists(select 1 from cobis..cl_producto where pd_producto = @i_producto)
+     select @w_codigo = null
+  else
+     begin
+       /* 'No existe producto' */
+       select @w_num = 101032
+       goto mensaje_error
+     end
+
+  if exists(select 1 from cobis..cl_direccion where di_ente = @i_ente and di_direccion = @i_direccion)
+     select @w_codigo = null
+  else
+     begin
+       /* 'No existe direccion' */
+       select @w_num = 101001
+       goto mensaje_error
+     end
+
+  exec @w_return = cobis..sp_catalogo
+       @t_debug        = @t_debug,
+       @t_file         = @t_file,
+       @t_from         = @w_sp_name,
+       @i_operacion    = 'E',
+       @i_tabla        = 'cl_ttelefono',
+       @i_codigo       = @i_tipo_telefono
+
+  if @w_return != 0
+     begin
+       /* 'No existe tipo de telefono' */
+       select @w_num = 101025
+       goto mensaje_error
+     end
+
+  /* validar la region/prefijo del numero de telefono */
+  select @w_region = substring(@i_valor, 1, 2)
+  
+  exec @w_return = cobis..sp_catalogo
+    @t_debug      = @t_debug,
+    @t_file       = @t_file,
+    @t_from       = @w_sp_name,
+    @i_operacion  = 'E',
+    @i_tabla      = 'cl_region_telefono',
+    @i_codigo     = @w_region
+
+  if @w_return != 0
+     begin
+       /* 'NO EXISTE LA REGION DEL NUMERO DE TELEFONO' */
+       select @w_num = 101329
+       goto mensaje_error
+     end
+
+  /** obtener la longitud parametro de telefonos convencionales **/
+  select @w_dig_cel = pa_tinyint
+  from cobis..cl_parametro
+  where pa_producto = 'MIS'
+  and pa_nemonico = 'LONGT'		
+
+  if datalength(@i_valor) != @w_dig_cel
+     begin
+       /* 'LONGITUD DEL NUMERO TELEFONICO INCORRECTA' */
+       select @w_num = 101331
+       goto mensaje_error
+     end
+
+  --ref20 Ini
+  select @w_subtipo = en_subtipo,
+         @w_fecha_crea_cli = convert(varchar(10), en_fecha_crea, 101),
+         @w_idcliente  = isnull(en_ced_ruc,isnull(p_pasaporte,'')),
+         @w_nombrecli  = isnull(en_nombre,''),
+         @w_p_apellido = isnull(p_p_apellido,''),
+         @w_s_apellido = isnull(p_s_apellido,'')
+  from cobis..cl_ente
+  where en_ente = @i_ente
+
+  if @@rowcount = 0
+     begin
+       /* 'No existe ente' */
+       select @w_num = 101042
+       goto mensaje_error
+     end
+  --ref20 Fin
+
+  if @w_subtipo = 'C' and @i_pertenece <> 'P'                
+     begin
+       /* 'para companias solo aplica propio en pertenece a'*/
+       select @w_num = 101547
+       goto mensaje_error
+     end   
+
+  --ref19 Valida si la direccion tipo domicilio tiene algun movil asociado
+  if @w_subtipo = 'P' and @i_tipo_dir = 'D'
+     begin
+       if exists(select 1 from cl_direccion_email where de_ente = @i_ente and de_tipo = 'M' and de_dir_domici = @i_direccion)
+          begin
+            select @w_num = 101693
+	    goto mensaje_error
+          end      
+     end
+  --ref19
+
+  /** secuencial de la transaccion de servicio **/
+  if @i_no_cobis = 'S'
+     begin
+       exec @w_return = cobis..sp_gen_sec
+	   @s_date 	 = @s_date,
+           @o_secuencial = @s_ssn out
+
+       if @w_return != 0
+          begin
+            /* 'Error en creacion de transaccion de servicio'*/
+            select @w_num = 103005
+            goto mensaje_error
+          end
+     end
+
+  --ref20 Ini  Obtiene el canal de donde se realizo la actualizacion del telefono
+  if @i_envio_notifica = 'S' and @w_subtipo = 'P'
+     begin
+       if @w_fecha_reg > @w_fecha_crea_cli
+	  begin
+            if @i_producto = 2 and @i_canal <> 'VREFEREN'
+               select @w_canal = 'MIS'
+            else
+               if @i_producto = 166 and exists(select a.valor from cl_catalogo a, cl_tabla b where b.tabla = 'cl_cbpmnac' 
+                                               and a.tabla = b.codigo and a.codigo = @i_canal)
+                  select @w_canal = 'BPM'
+               else
+                  if @i_producto = 166 and exists(select a.valor from cl_catalogo a, cl_tabla b where b.tabla = 'cl_cfinnac' 
+                                                  and a.tabla = b.codigo and a.codigo = @i_canal)
+                     select @w_canal = 'FORMINT'
+                  else
+                     if @i_canal = 'VREFEREN'
+                        select @w_canal = @i_canal
+                     else
+                        select @w_canal = 'OTROS'
+          end
+     end
+  --ref20 Fin
+
+  Begin tran
+
+    /* obtener el secuencial del telefono */
+    select @o_secuencial = isnull(max(te_secuencial),0) + 1
+    from cobis..cl_telefono
+    where te_ente = @i_ente
+    and te_direccion = @i_direccion
+
+    if @@error != 0
+       begin
+         /* 'Error en incremento de telefono' */
+         select @w_num = 105035
+         goto mensaje_error
+       end
+
+    insert into cobis..cl_telefono(
+      te_ente, te_direccion, te_secuencial,
+      te_valor, te_tipo_telefono, te_extension, te_comentario, te_pertenece)
+    values (@i_ente, @i_direccion, @o_secuencial,
+      @i_valor, @i_tipo_telefono, @i_extension, @i_comentario, @i_pertenece)
+
+    if @@error != 0
+       begin
+         /* 'Error en creacion de telefono' */
+         select @w_num = 103038
+         goto mensaje_error
+       end
+
+    /* Transaccion servicios - cl_telefono */
+    insert into cobis..ts_telefono (
+      secuencial, tipo_transaccion, alterno, clase, fecha,
+      usuario, terminal, srv, lsrv, origen, rol, 
+      ente, direccion, telefono, valor,
+      tipo, extension, comentario, pertenece, canal)	--ref20
+    values(@s_ssn, @t_trn, @p_alterno, 'N', @s_date,
+      @s_user, @s_term, @s_srv, @s_lsrv, @i_producto, @s_rol, 
+      @i_ente, @i_direccion, @o_secuencial, @i_valor,
+      @i_tipo_telefono, @i_extension, @i_comentario, @i_pertenece, @w_canal)	--ref20
+
+    if @@error != 0
+       begin
+         /* 'Error en creacion de transaccion de servicio' */
+         select @w_num = 103005
+         goto mensaje_error
+       end
+
+    --ref20 Ini
+	if @i_envio_notifica = 'S' and @w_subtipo = 'P' 
+       begin 
+         if @w_fecha_reg > @w_fecha_crea_cli
+            begin
+              --Envia Notificacion al cliente por el cambio de telefono
+              
+              --Obtiene el email del cliente
+     	      select top 1 @w_mail = de_descripcion
+              from cobis..cl_direccion_email
+              where de_ente = @i_ente
+              and de_tipo = 'E'
+              order by de_fecha_modificacion desc
+
+              if @@rowcount = 0
+                 select @w_mail = ''
+			--ref21 Ini
+			--Obtiene el celular del cliente
+			select top 1 @w_celular = de_descripcion
+				from cobis..cl_direccion_email
+				where de_ente = @i_ente
+				and de_tipo = 'M'
+				order by de_fecha_modificacion desc
+
+			if @@rowcount = 0
+				select @w_celular = '' 
+			--ref21 Fin
+              select @w_servicio = 'Actualizacion de Telefono'
+			  
+      	      exec @w_return = cobis..sp_notif_cli_mod_dir
+		 @i_producto 	   = @i_producto,
+		 @i_ente     	   = @i_ente,
+		 @i_canalmod       = @i_canal,
+		 @i_oficina	   = @s_ofi,
+		 @i_envio_notifica = @i_envio_notifica,	  --Cuando sean actualizaciones masivas se debe enviar el valor "N"
+		 @i_idcliente      = @w_idcliente,
+		 @i_today          = @w_today,
+		 @i_nombrecli 	   = @w_nombrecli,
+	 	 @i_p_apellido 	   = @w_p_apellido,
+	 	 @i_s_apellido 	   = @w_s_apellido,
+		 @i_servicio       = @w_servicio,
+		 @i_mail           = @w_mail,
+		 @i_telefono	   = '0'
+			,@o_medio 			= @w_medio out,			--ref21
+			@o_nombrecli 		= @w_nombrecliente out,	--ref21
+			@o_fecha 			= @w_fecha out,			--ref21
+			@o_hora 			= @w_hora out,			--ref21
+			@o_idcli_enm 		= @w_idcli_enm out,		--ref21
+			@o_nemonico 			= @w_nemonico out--ref
+			
+			  if @w_return != 0
+			 begin
+			   --'Error en NotificaciÃ³n al Cliente por ActualizaciÃ³n de Datos' 
+			   select @w_num = @w_return
+			   goto mensaje_error
+			 end
+				--ref21 Ini
+				--Retorna campos para envÃ­o de notificaciÃ³n 
+				select @w_medio, 
+				@w_nombrecliente,
+				@w_fecha,
+				@w_hora,
+				@w_idcli_enm,
+				@w_servicio,
+				@w_mail,
+				@w_nemonico,
+				@o_secuencial,
+				@w_celular
+				--ref21 Fin
+            end
+       end
+    --ref20 Fin
+
+  commit tran
+
+  --select @o_secuencial
+
+  return 0
+end
+else
+begin
+   /*  'No corresponde codigo de transaccion' */
+   select @w_num = 151051
+   goto mensaje_error
+end
+end
+
+
+/** Update **/
+If @i_operacion = 'U'
+begin
+if @t_trn = 112
+begin
+  --ref20 Ini
+  if @i_ente = 0
+     begin
+       /* 'No existe ente' */
+       select @w_num = 101042
+       goto mensaje_error
+     end
+  --ref20 Fin
+
+  /* Verificacion de claves foraneas */
+  if exists(select 1 from cobis..cl_producto
+            where pd_producto = @i_producto)
+     select @w_codigo = null
+  else
+     begin
+       /* 'No existe producto' */
+       select @w_num = 101032
+       goto mensaje_error
+     end
+
+  if exists (select 1 from cobis..cl_direccion
+	     where di_ente = @i_ente
+	     and di_direccion = @i_direccion)
+     select @w_codigo = null
+  else
+     begin
+       /* 'No existe direccion' */
+       select @w_num = 101001
+       goto mensaje_error
+     end
+
+   exec @w_return = cobis..sp_catalogo
+        @t_debug        = @t_debug,
+        @t_file         = @t_file,
+        @t_from         = @w_sp_name,
+        @i_operacion    = 'E',
+        @i_tabla        = 'cl_ttelefono',
+	@i_codigo       = @i_tipo_telefono
+
+   if @w_return != 0
+   begin
+      /* 'No existe tipo de telefono' */
+      select @w_num = 101025
+      goto mensaje_error
+   end
+
+   /* validar la region/prefijo del numero de telefono */
+      select @w_region = substring(@i_valor, 1, 2)
+      exec @w_return = cobis..sp_catalogo
+           @t_debug        = @t_debug,
+           @t_file         = @t_file,
+           @t_from         = @w_sp_name,
+           @i_operacion    = 'E',
+           @i_tabla        = 'cl_region_telefono',
+	   @i_codigo       = @w_region
+
+      if @w_return != 0
+      begin
+         /* 'NO EXISTE LA REGION DEL NUMERO DE TELEFONO' */
+         select @w_num = 101329
+         goto mensaje_error
+      end
+
+       /** obtener la longitud parametro de telefonos convencionales **/
+       select @w_dig_cel = pa_tinyint
+        from cobis..cl_parametro
+       where pa_producto = 'MIS'
+        and pa_nemonico = 'LONGT'
+      if datalength(@i_valor) != @w_dig_cel 
+      begin
+         /* 'LONGITUD DEL NUMERO TELEFONICO INCORRECTA' */
+         select @w_num = 101331
+         goto mensaje_error
+      end
+
+  --ref20 Ini
+  select @w_subtipo = en_subtipo,
+         @w_fecha_crea_cli = convert(varchar(10), en_fecha_crea, 101),
+         @w_idcliente  = isnull(en_ced_ruc,isnull(p_pasaporte,'')),
+         @w_nombrecli  = isnull(en_nombre,''),
+         @w_p_apellido = isnull(p_p_apellido,''),
+         @w_s_apellido = isnull(p_s_apellido,'')
+  from cobis..cl_ente
+  where en_ente = @i_ente
+
+  if @@rowcount = 0
+     begin
+       /* 'No existe ente' */
+       select @w_num = 101042
+       goto mensaje_error
+     end
+  --ref20 Fin
+
+   if @w_subtipo = 'C' and @i_pertenece <> 'P'                
+   begin
+         /* 'para companias solo aplica propio en pertenece a'*/
+         select @w_num = 101547
+         goto mensaje_error
+   end   
+
+   select @w_valor         = te_valor,
+	  @w_tipo_telefono = te_tipo_telefono,
+          @w_extension     = te_extension,
+          @w_comentario    = te_comentario,
+          @w_pertenece     = te_pertenece
+      from cobis..cl_telefono
+      where te_ente = @i_ente
+      and te_direccion = @i_direccion
+      and te_secuencial = @i_secuencial
+
+   if @@rowcount = 0
+   begin
+      /* 'No existe telefono' */
+      select @w_num = 105035
+      goto mensaje_error
+   end
+
+   select @v_valor         = @w_valor,
+          @v_tipo_telefono = @w_tipo_telefono,
+          @v_extension     = @w_extension,
+          @v_comentario    = @w_comentario,
+ 	  @v_pertenece     = @w_pertenece
+
+  select @i_envio_notifica = 'N'	--ref20
+
+  if @w_pertenece = @i_pertenece
+     select @w_pertenece= null, @v_pertenece= null
+  else
+     select @w_pertenece= @i_pertenece, @i_envio_notifica = 'S'	  --ref20
+
+  if @w_valor = @i_valor
+     select @w_valor = null, @v_valor = null
+  else
+     select @w_valor = @i_valor, @i_envio_notifica = 'S'	  --ref20
+
+  if @w_tipo_telefono = @i_tipo_telefono
+     select @w_tipo_telefono = null, @v_tipo_telefono = null
+  else
+     select @w_tipo_telefono = @i_tipo_telefono, @i_envio_notifica = 'S'    --ref20
+
+  if @w_extension = @i_extension
+     select @w_extension = null, @v_extension = null
+  else
+     select @w_extension = @i_extension, @i_envio_notifica = 'S'    --ref20
+
+   if @w_comentario = @i_comentario
+      select @w_comentario = null, @v_comentario = null
+   else
+      select @w_comentario = @i_comentario
+
+   /** secuencial de la transaccion de servicio **/
+   if @i_no_cobis = 'S'
+   begin
+      exec @w_return = cobis..sp_gen_sec
+	   @s_date 	 = @s_date,
+           @o_secuencial = @s_ssn out
+
+      if @w_return != 0
+      begin
+         /* 'Error en creacion de transaccion de servicio'*/
+         select @w_num = 103005
+         goto mensaje_error
+      end
+   end
+
+  --ref20 Ini  Obtiene el canal de donde se realizo la actualizacion del telefono
+  if @i_envio_notifica = 'S' and @w_subtipo = 'P'
+     begin
+       if @w_fecha_reg > @w_fecha_crea_cli
+	  begin
+            if @i_producto = 2 and @i_canal <> 'VREFEREN'
+               select @w_canal = 'MIS'
+            else
+               if @i_producto = 166 and exists(select a.valor from cl_catalogo a, cl_tabla b where b.tabla = 'cl_cbpmnac' 
+                                               and a.tabla = b.codigo and a.codigo = @i_canal)
+                  select @w_canal = 'BPM'
+               else
+                  if @i_producto = 166 and exists(select a.valor from cl_catalogo a, cl_tabla b where b.tabla = 'cl_cfinnac' 
+                                                  and a.tabla = b.codigo and a.codigo = @i_canal)
+                     select @w_canal = 'FORMINT'
+                  else
+                     if @i_canal = 'VREFEREN'
+                        select @w_canal = @i_canal
+                     else
+                        select @w_canal = 'OTROS'
+          end              
+     end
+  --ref20 Fin
+
+  Begin Tran
+
+    update cobis..cl_telefono
+    set te_valor         = @i_valor,
+	te_tipo_telefono = @i_tipo_telefono,
+        te_extension     = @i_extension,
+        te_comentario    = @i_comentario,
+	te_pertenece     = @i_pertenece
+    where te_ente = @i_ente
+    and te_direccion = @i_direccion
+    and te_secuencial = @i_secuencial
+
+    if @@error != 0
+       begin
+         /* 'Error en actualizacion de telefono' */
+         select @w_num = 105035
+         goto mensaje_error
+       end
+
+    /* Transaccion servicios - cl_telefono */
+    insert into cobis..ts_telefono (
+      secuencial, tipo_transaccion, alterno, clase, fecha,
+      usuario, terminal, srv, lsrv, origen, rol, 
+      ente, direccion, telefono, valor,
+      tipo, extension, comentario, pertenece)
+    values(@s_ssn, @t_trn, @p_alterno, 'P', @s_date,
+      @s_user, @s_term,@s_srv, @s_lsrv, @i_producto, @s_rol, 
+      @i_ente, @i_direccion, @i_secuencial, @v_valor,
+      @v_tipo_telefono, @v_extension, @v_comentario, @v_pertenece)
+
+    if @@error != 0
+       begin
+         /* 'Error en creacion de transaccion de servicio' */
+         select @w_num = 103005
+         goto mensaje_error
+       end
+
+    insert into cobis..ts_telefono (
+      secuencial, tipo_transaccion, alterno, clase, fecha,
+      usuario, terminal, srv, lsrv, origen, rol, 
+      ente, direccion, telefono, valor,
+      tipo, extension, comentario, pertenece, canal)	--ref20
+    values(@s_ssn, @t_trn, @p_alterno, 'A', @s_date,
+      @s_user, @s_term, @s_srv, @s_lsrv, @i_producto, @s_rol,
+      @i_ente, @i_direccion, @i_secuencial, @w_valor,
+      @w_tipo_telefono, @w_extension, @w_comentario, @w_pertenece, @w_canal)	--ref20
+
+    if @@error != 0
+       begin
+         /* 'Error en creacion de transaccion de servicio' */
+         select @w_num = 103005
+         goto mensaje_error
+       end
+
+    --ref20 Ini
+    if @i_envio_notifica = 'S' and @w_subtipo = 'P' 
+       begin 
+         if @w_fecha_reg > @w_fecha_crea_cli
+            begin
+              --Envia Notificacion al cliente por el cambio de telefono
+
+	      --Obtiene el email del cliente
+	      select top 1 @w_mail = de_descripcion
+              from cobis..cl_direccion_email
+     	      where de_ente = @i_ente
+     	      and de_tipo = 'E'
+     	      order by de_fecha_modificacion desc
+
+     	      if @@rowcount = 0
+        	 select @w_mail = ''
+			--ref21
+		--Obtiene el celular del cliente
+		 select top 1 @w_celular = de_descripcion
+			from cobis..cl_direccion_email
+			where de_ente = @i_ente
+			and de_tipo = 'M'
+			order by de_fecha_modificacion desc
+
+		if @@rowcount = 0
+			select @w_celular = '' 
+			--ref21 Fin
+              select @w_servicio = 'Actualizacion de Telefono'	  
+
+      	      exec @w_return = cobis..sp_notif_cli_mod_dir
+		 @i_producto 	   = @i_producto,
+		 @i_ente     	   = @i_ente,
+		 @i_canalmod       = @i_canal,
+		 @i_oficina	   = @s_ofi,
+		 @i_envio_notifica = @i_envio_notifica,	  --Cuando sean actualizaciones masivas se debe enviar el valor "N"
+		 @i_idcliente      = @w_idcliente,
+		 @i_today          = @w_today,
+		 @i_nombrecli 	   = @w_nombrecli,
+	 	 @i_p_apellido 	   = @w_p_apellido,
+	 	 @i_s_apellido 	   = @w_s_apellido,
+		 @i_servicio       = @w_servicio,
+		 @i_mail           = @w_mail,
+		 @i_telefono	   = '0',
+			@o_medio 		= @w_medio out,--ref21
+			@o_nombrecli 	= @w_nombrecliente out,--ref21
+			@o_fecha 		= @w_fecha out,--ref21
+			@o_hora 		= @w_hora out,--ref21
+			@o_idcli_enm 	= @w_idcli_enm out,--ref21
+			@o_nemonico 			= @w_nemonico out--ref21
+				
+			if @w_return != 0
+			 begin
+			   --'Error en NotificaciÃ³n al Cliente por ActualizaciÃ³n de Datos' 
+			   select @w_num = @w_return
+			   goto mensaje_error
+			 end
+			 --ref21 Ini
+				--Retorna campos para envÃ­o de notificaciÃ³n 
+				select @w_medio, 
+					@w_nombrecliente,
+					@w_fecha,
+					@w_hora,
+					@w_idcli_enm,
+					@w_servicio,
+					@w_mail,
+					@w_nemonico,
+					@w_celular
+				--ref21 Fin
+		end
+       end
+    --ref20 Fin
+	
+  commit tran
+
+  return 0
+
+end
+else
+begin
+   /*  'No corresponde codigo de transaccion' */
+   select @w_num = 151051
+   goto mensaje_error
+end
+end
+
+
+/** Search **/
+If @i_operacion = 'S'
+begin
+if @t_trn = 147
+begin
+   select 'Tipo'       = b.valor,
+          'Numero'     = te_valor,
+          'Extension'  = te_extension,
+          'Comentario' = te_comentario,
+          'Sec'        = te_secuencial,
+          'Pertenencia' = te_pertenece
+      from cobis..cl_telefono,
+           cobis..cl_tabla a, cobis..cl_catalogo b
+      where te_ente = @i_ente
+      and te_direccion = @i_direccion
+      and a.tabla = 'cl_ttelefono'
+      and a.codigo = b.tabla
+      and b.codigo = te_tipo_telefono
+      order by te_ente, te_direccion, te_secuencial
+
+   return 0
+end
+else
+begin
+   /* 'No corresponde codigo de transaccion' */
+   select @w_num = 151051
+   goto mensaje_error
+end
+end
+
+
+/** Query **/
+If @i_operacion = 'Q'
+begin
+if @t_trn = 147
+begin
+   select @w_secuencial    = te_secuencial,
+          @w_tipo_telefono = te_tipo_telefono,
+          @w_desc_tipo     = b.valor,
+          @w_valor         = te_valor,
+          @w_extension     = te_extension,
+          @w_comentario    = te_comentario,
+	  @w_pertenece	   = te_pertenece
+      from cobis..cl_telefono,
+           cobis..cl_tabla a, cobis..cl_catalogo b
+      where te_ente = @i_ente
+      and te_direccion = @i_direccion
+      and te_secuencial = @i_secuencial
+      and a.tabla = 'cl_ttelefono'
+      and a.codigo = b.tabla
+      and b.codigo = te_tipo_telefono
+
+   if @w_tipo_telefono != 'C'
+   begin
+      select @w_region = substring(@w_valor, 1, 2)
+      select @w_desc_region = b.valor
+         from cobis..cl_tabla a, cobis..cl_catalogo b
+         where a.tabla = 'cl_region_telefono'
+         and a.codigo = b.tabla
+         and b.codigo = @w_region
+   end
+
+   /** retornar los datos de la consulta **/ 
+   select @w_secuencial,
+          @w_tipo_telefono,
+          @w_desc_tipo,
+          @w_region, 
+          @w_desc_region,
+          @w_valor,
+          @w_extension,
+          @w_comentario,
+	  @w_pertenece
+
+   return 0
+end
+else
+begin
+   /* 'No corresponde codigo de transaccion' */
+   select @w_num = 151051
+   goto mensaje_error
+end
+end
+
+/** Delete **/
+if @i_operacion = 'D'
+begin
+if @t_trn = 148
+begin
+  --ref20 Ini
+  if @i_ente = 0
+     begin
+       /* 'No existe ente' */
+       select @w_num = 101042
+       goto mensaje_error
+     end
+  --ref20 Fin
+
+  /* Verificacion de claves foraneas */
+  if exists(select 1 from cobis..cl_producto where pd_producto = @i_producto)
+     select @w_codigo = null
+  else
+     begin
+       /* 'No existe producto' */
+       select @w_num = 101032
+       goto mensaje_error
+     end
+
+  --ref20 Ini
+  select @w_subtipo = en_subtipo,
+         @w_fecha_crea_cli = convert(varchar(10), en_fecha_crea, 101),
+         @w_idcliente  = isnull(en_ced_ruc,isnull(p_pasaporte,'')),
+         @w_nombrecli  = isnull(en_nombre,''),
+         @w_p_apellido = isnull(p_p_apellido,''),
+         @w_s_apellido = isnull(p_s_apellido,'')
+  from cobis..cl_ente
+  where en_ente = @i_ente
+ 
+  if @@rowcount = 0
+     begin
+       /* 'No existe ente' */
+       select @w_num = 101042
+       goto mensaje_error
+     end
+  --ref20 Fin
+
+  /* Valores para transaccion de  servicios */
+  select @w_valor         = te_valor,
+	 @w_tipo_telefono = te_tipo_telefono,
+         @w_extension     = te_extension,
+         @w_comentario    = te_comentario
+  from cobis..cl_telefono
+  where te_ente = @i_ente
+  and te_direccion = @i_direccion
+  and te_secuencial = @i_secuencial
+
+  if @@rowcount = 0
+     begin
+       /* 'No existe telefono' */
+       select @w_num = 105035
+       goto mensaje_error
+     end
+
+  /** secuencial de la transaccion de servicio **/
+  if @i_no_cobis = 'S'
+     begin
+       exec @w_return = cobis..sp_gen_sec
+	  @s_date 	 = @s_date,
+          @o_secuencial = @s_ssn out
+
+       if @w_return != 0
+          begin
+            /* 'Error en creacion de transaccion de servicio'*/
+            select @w_num = 103005
+            goto mensaje_error
+          end
+     end
+
+  --ref20 Ini  Obtiene el canal de donde se realizo la eliminacion de la direccion
+  if @i_envio_notifica = 'S' and @w_subtipo = 'P'
+     begin
+       if @w_fecha_reg > @w_fecha_crea_cli
+	  begin
+            if @i_producto = 2 and @i_canal <> 'VREFEREN'
+               select @w_canal = 'MIS'
+            else
+               if @i_producto = 166 and exists(select a.valor from cl_catalogo a, cl_tabla b where b.tabla = 'cl_cbpmnac' 
+                                               and a.tabla = b.codigo and a.codigo = @i_canal)
+                  select @w_canal = 'BPM'
+               else
+                  if @i_producto = 166 and exists(select a.valor from cl_catalogo a, cl_tabla b where b.tabla = 'cl_cfinnac' 
+                                                  and a.tabla = b.codigo and a.codigo = @i_canal)
+                     select @w_canal = 'FORMINT'
+                  else
+                     if @i_canal = 'VREFEREN'
+                        select @w_canal = @i_canal
+                     else
+                        select @w_canal = 'OTROS'
+          end              
+     end
+  --ref20 Fin
+
+  Begin Tran
+
+    delete cl_telefono
+    where te_ente = @i_ente
+    and te_direccion = @i_direccion
+    and te_secuencial = @i_secuencial
+
+    if @@error != 0
+       begin
+         /* 'Error en eliminacion de telefono' */
+         select @w_num = 107038
+         goto mensaje_error
+       end
+
+    insert into cobis..ts_telefono (
+      secuencial, alterno, tipo_transaccion, clase, fecha,
+      usuario, terminal, srv, lsrv, origen, rol,
+      ente, direccion, telefono, valor,
+      tipo, extension, comentario, canal)		--ref20
+    values(@s_ssn, @p_alterno, @t_trn, 'B', @s_date,
+      @s_user, @s_term, @s_srv, @s_lsrv, @i_producto, @s_rol,
+      @i_ente, @i_direccion, @i_secuencial, @w_valor,
+      @w_tipo_telefono, @w_extension, @w_comentario, @w_canal)	--ref20
+
+    if @@error != 0
+       begin
+         /* 'Error en creacion de transaccion de servicio' */
+         select @w_num = 103005
+         goto mensaje_error
+       end
+
+    --ref20 Ini
+    if @i_envio_notifica = 'S' and @w_subtipo = 'P' 
+       begin 
+         if @w_fecha_reg > @w_fecha_crea_cli
+            begin
+              --Envia Notificacion al cliente por la eliminacion del telefono
+
+	      --Obtiene el email del cliente
+     	      select top 1 @w_mail = de_descripcion
+     	      from cobis..cl_direccion_email
+     	      where de_ente = @i_ente
+     	      and de_tipo = 'E'
+     	      order by de_fecha_modificacion desc
+
+     	      if @@rowcount = 0
+     		 select @w_mail = '' 
+			 --ref21 Ini
+			 --Obtiene el celular del cliente
+			select top 1 @w_celular = de_descripcion
+				from cobis..cl_direccion_email
+				where de_ente = @i_ente
+				and de_tipo = 'M'
+				order by de_fecha_modificacion desc
+
+			if @@rowcount = 0
+				select @w_celular = '' 
+			--ref21 Fin
+              select @w_servicio = 'Actualizacion de Telefono'
+  
+      	      exec @w_return = cobis..sp_notif_cli_mod_dir
+		 @i_producto 	   = @i_producto,
+		 @i_ente     	   = @i_ente,
+		 @i_canalmod       = @i_canal,
+		 @i_oficina	   = @s_ofi,
+		 @i_envio_notifica = @i_envio_notifica,	  --Cuando sean actualizaciones masivas se debe enviar el valor "N"
+		 @i_idcliente      = @w_idcliente,
+		 @i_today          = @w_today,
+		 @i_nombrecli 	   = @w_nombrecli,
+	 	 @i_p_apellido 	   = @w_p_apellido,
+	 	 @i_s_apellido 	   = @w_s_apellido,
+		 @i_servicio       = @w_servicio,
+		 @i_mail           = @w_mail,
+		 @i_telefono	   = '0'
+			,@o_medio 		= @w_medio out,
+			@o_nombrecli 	= @w_nombrecliente out, --ref21
+			@o_fecha 		= @w_fecha out, --ref21
+			@o_hora 		= @w_hora out, --ref21
+			@o_idcli_enm 	= @w_idcli_enm out, --ref21
+			@o_nemonico		= @w_nemonico out  --ref21
+				
+				if @w_return != 0
+				 begin
+				   --'Error en NotificaciÃ³n al Cliente por ActualizaciÃ³n de Datos' 
+				   select @w_num = @w_return
+				   goto mensaje_error
+				 end
+				 --ref21 Ini
+					--Retorna campos para envÃ­o de notificaciÃ³n 
+					select @w_medio, 
+						@w_nombrecliente,
+						@w_fecha,
+						@w_hora,
+						@w_idcli_enm,
+						@w_servicio,
+						@w_mail,
+						@w_nemonico,
+						@w_celular
+					--ref21 Fin
+            end
+       end
+    --ref20 Fin
+
+  commit tran
+
+  return 0
+end
+else
+begin
+   /* 'No corresponde codigo de transaccion' */
+   select @w_num = 151051
+   goto mensaje_error
+end
+end
+
+
+/** CONSULTA PARA BANCA VIRTUAL **/ -- GMD 2002/07/12 { 
+if @i_operacion = 'B'
+begin
+if @t_trn = 147
+begin
+  set rowcount 20
+
+  select @o_num_filas = 20
+  select @o_num_filas 
+
+  if @i_tipo_cliente <> 'G'
+     begin
+       select 'Codigo' = te_secuencial,
+         'Telefono'= te_valor,
+         'Tipo' = te_tipo_telefono,
+         'Direccion'= te_direccion,     
+         'Descripcion' = substring(a.valor, 1, 10), 
+         'Direccion Desc.' = substring(di_descripcion, 1,45)
+       from cl_telefono, cl_catalogo a, cl_tabla m, cl_direccion
+       where te_ente = @i_ente
+       and di_ente = te_ente 
+       and di_direccion = te_direccion
+       and ((@i_tipo_telefono is null and 
+             te_tipo_telefono in (select codigo from cl_catalogo
+                                  where tabla = (select codigo from cl_tabla where tabla = 'cl_ttelefono'))) 
+             or (te_tipo_telefono = @i_tipo_telefono))
+	    --and    te_tipo_telefono = @i_tipo_telefono  ARO 
+       and a.codigo = te_tipo_telefono
+       and a.tabla  = m.codigo
+       and m.tabla = 'cl_ttelefono'
+       and te_secuencial > @i_secuencial
+       order by te_secuencial
+     end
+  else --cliente es grupo 
+     begin
+       select 'Codigo' = te_secuencial,
+         'Telefono'= te_valor,
+         'Tipo' = te_tipo_telefono,
+         'Direccion'= te_direccion,     
+         'Descripcion' = substring(a.valor, 1, 10), 
+         'Direccion Desc.' = substring(di_descripcion, 1,45),
+	 'Nombre' = en_nombre + ' ' + p_p_apellido + ' ' + p_s_apellido
+       from cl_telefono, cl_catalogo a, cl_tabla m, cl_direccion, cl_ente
+       where en_grupo = @i_ente
+       and te_ente = en_ente
+       and di_ente = te_ente 
+       and di_direccion = te_direccion
+       and ((@i_tipo_telefono is null and 
+             te_tipo_telefono in (select codigo from cl_catalogo
+                                  where tabla = (select codigo from cl_tabla where tabla = 'cl_ttelefono'))) 
+              or (te_tipo_telefono = @i_tipo_telefono))
+       and a.codigo = te_tipo_telefono
+       and a.tabla  = m.codigo
+       and m.tabla = 'cl_ttelefono'
+       and te_secuencial > @i_secuencial
+       order by te_secuencial
+     end 
+	
+  if @@error != 0
+     begin
+       /* 'No existe dato solicitado' */
+       select @w_num = 101001
+       goto mensaje_error
+     end
+
+  set rowcount 0
+  return 0
+
+end
+else
+begin
+   /*  'No corresponde codigo de transaccion' */
+   select @w_num = 151051
+   goto mensaje_error
+end
+end
+/* FIN DE CONSULTA PARA BANCA VIRTUAL */  -- GMD 2002/07/12 } 
+
+
+return 0
+
+/** enviar el mensaje de error **/
+mensaje_error:
+if @i_mensaje = 'S'
+begin
+   exec cobis..sp_cerror
+	@t_debug    = @t_debug,
+	@t_file     = @t_file,
+	@t_from     = @w_sp_name,
+	@i_num      = @w_num
+   return 1
+end
+else
+begin
+   exec cobis..sp_msj_error
+	@t_debug    = @t_debug,
+	@t_file     = @t_file,
+	@t_from     = @w_sp_name,
+	@i_numero   = @w_num,
+        @o_mensaje  = @o_msj_error out
+   return @w_num
+end
+

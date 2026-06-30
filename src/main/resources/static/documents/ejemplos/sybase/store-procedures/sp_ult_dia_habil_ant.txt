@@ -1,0 +1,36 @@
+create proc sp_ult_dia_habil_ant
+( 
+	@i_fecha     datetime = null,
+	@i_fch_habil datetime output
+)
+as 
+	
+declare @w_verdadero 		char(1),
+        @w_dia_habil 		varchar(12),
+        @w_fecha_cobro 		varchar(12),
+        @i_ciudad		int
+        
+if @i_fecha is  null
+select  @i_fecha=convert(varchar(12),fp_fecha,101) from cobis..ba_fecha_proceso
+
+set @i_ciudad = 1
+
+select  @w_verdadero = 'S'
+--select  @i_fecha = convert(varchar(12), dateadd(dd, -1, convert(datetime,@i_fecha)), 101)
+
+while @w_verdadero = 'S'
+begin
+      select  @w_dia_habil = convert(varchar(12), df_fecha, 101)
+      from  cobis..cl_dias_feriados
+      where  df_fecha =@i_fecha      and  df_ciudad = @i_ciudad
+
+        
+      if @@rowcount = 0
+      begin
+         select @w_verdadero    = 'N',
+	 	@w_dia_habil    = @i_fecha,
+		@i_fch_habil    = @i_fecha
+      end
+      else
+         select  @i_fecha = convert(varchar(12), dateadd(dd, -1, convert(datetime,@i_fecha)), 101)
+end

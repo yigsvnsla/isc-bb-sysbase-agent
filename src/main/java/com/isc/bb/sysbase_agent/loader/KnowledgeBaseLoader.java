@@ -15,9 +15,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.ResourcePatternResolver;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
+import com.isc.bb.sysbase_agent.reader.MarkdownReader;
 import com.isc.bb.sysbase_agent.reader.PdfDocumentReader;
+import com.isc.bb.sysbase_agent.reader.SqlFileReader;
 
 @Component
 public class KnowledgeBaseLoader implements CommandLineRunner {
@@ -27,31 +30,48 @@ public class KnowledgeBaseLoader implements CommandLineRunner {
     private final VectorStore vectorStore;
     private final String pdfDir;
     private final ResourcePatternResolver resourceResolver;
+    private final JdbcTemplate jdbcTemplate;
+    private final SqlFileReader sqlFileReader;
+    private final MarkdownReader markdownReader;
     private final TokenTextSplitter splitter;
 
     public KnowledgeBaseLoader(VectorStore vectorStore,
-                               @Value("${app.knowledge-base.pdf-dir:classpath:static/documents}") String pdfDir,
-                               ResourcePatternResolver resourceResolver) {
+                                @Value("${app.knowledge-base.pdf-dir:classpath:static/documents}") String pdfDir,
+                                ResourcePatternResolver resourceResolver,
+                                JdbcTemplate jdbcTemplate,
+                                SqlFileReader sqlFileReader,
+                                MarkdownReader markdownReader) {
         this.vectorStore = vectorStore;
         this.pdfDir = pdfDir;
         this.resourceResolver = resourceResolver;
+        this.jdbcTemplate = jdbcTemplate;
+        this.sqlFileReader = sqlFileReader;
+        this.markdownReader = markdownReader;
         this.splitter = TokenTextSplitter.builder()
-                .withChunkSize(500)
+                .withChunkSize(1200)
                 .withMinChunkSizeChars(350)
                 .withMinChunkLengthToEmbed(5)
                 .withMaxNumChunks(10_000)
+                .withKeepSeparator(true)
                 .build();
     }
 
     @Override
     public void run(String... args) {
         var pdfs = resolvePdfFiles();
-        if (pdfs.isEmpty()) {
-            log.info("No se encontraron PDFs en: {}", pdfDir);
-            return;
-        }
         for (var file : pdfs) {
             indexFile(file);
+        }
+        var sqlFiles = resolveSqlFiles();
+        for (var file : sqlFiles) {
+            indexSqlFile(file);
+        }
+        var mdFiles = resolveMdFiles();
+        for (var file : mdFiles) {
+            indexMdFile(file);
+        }
+        if (pdfs.isEmpty() && sqlFiles.isEmpty() && mdFiles.isEmpty()) {
+            log.info("No se encontraron archivos para indexar en: {}", pdfDir);
         }
     }
 
@@ -105,10 +125,113 @@ public class KnowledgeBaseLoader implements CommandLineRunner {
     }
 
     public int reindexAll() {
+        jdbcTemplate.update("DELETE FROM vector_store");
+        log.info("Vector store limpiado");
+        var count = 0;
         var pdfs = resolvePdfFiles();
         for (var file : pdfs) {
             indexFile(file);
+            count++;
         }
-        return pdfs.size();
+        var sqlFiles = resolveSqlFiles();
+        for (var file : sqlFiles) {
+            indexSqlFile(file);
+            count++;
+        }
+        var mdFiles = resolveMdFiles();
+        for (var file : mdFiles) {
+            indexMdFile(file);
+            count++;
+        }
+        return count;
+    }
+
+    private List<Path> resolveSqlFiles() {
+        var classpathPattern = "classpath*:static/documents/ejemplos/**/*.sql";
+        try {
+            var resources = resourceResolver.getResources(classpathPattern);
+            var paths = Arrays.stream(resources)
+                    .map(r -> {
+                        try { return r.getFile().toPath(); }
+                        catch (Exception e) { return null; }
+                    })
+                    .filter(Objects::nonNull)
+                    .toList();
+            if (!paths.isEmpty()) {
+                log.info("SQLs encontrados via classpath: {} archivos", paths.size());
+                return paths;
+            }
+        } catch (IOException e) {
+            log.debug("No se pudieron resolver SQLs del classpath: {}", classpathPattern);
+        }
+        var dir = Path.of(pdfDir.replaceFirst("^classpath:", ""));
+        var ejemplosDir = dir.resolve("ejemplos");
+        if (!Files.isDirectory(ejemplosDir)) {
+            return List.of();
+        }
+        try (var files = Files.walk(ejemplosDir)) {
+            var paths = files.filter(f -> f.toString().endsWith(".sql")).toList();
+            if (!paths.isEmpty()) {
+                log.info("SQLs encontrados en {}: {} archivos", ejemplosDir, paths.size());
+            }
+            return paths;
+        } catch (IOException e) {
+            return List.of();
+        }
+    }
+
+    public void indexSqlFile(Path file) {
+        try {
+            var docs = sqlFileReader.read(file);
+            var chunks = splitter.split(docs);
+            vectorStore.add(chunks);
+            log.info("SQL indexado: {} ({} chunks)", file.getFileName(), chunks.size());
+        } catch (Exception e) {
+            log.error("Error indexando SQL: {}", file.getFileName(), e);
+        }
+    }
+
+    private List<Path> resolveMdFiles() {
+        var classpathPattern = "classpath*:static/documents/**/*.md";
+        try {
+            var resources = resourceResolver.getResources(classpathPattern);
+            var paths = Arrays.stream(resources)
+                    .map(r -> {
+                        try { return r.getFile().toPath(); }
+                        catch (Exception e) { return null; }
+                    })
+                    .filter(Objects::nonNull)
+                    .toList();
+            if (!paths.isEmpty()) {
+                log.info("MDs encontrados via classpath: {} archivos", paths.size());
+                return paths;
+            }
+        } catch (IOException e) {
+            log.debug("No se pudieron resolver MDs del classpath: {}", classpathPattern);
+        }
+        var dir = Path.of(pdfDir.replaceFirst("^classpath:", ""));
+        if (!Files.isDirectory(dir)) {
+            return List.of();
+        }
+        try (var files = Files.walk(dir)) {
+            var paths = files.filter(f -> f.toString().endsWith(".md")).toList();
+            if (!paths.isEmpty()) {
+                log.info("MDs encontrados en {}: {} archivos", dir, paths.size());
+            }
+            return paths;
+        } catch (IOException e) {
+            return List.of();
+        }
+    }
+
+    public void indexMdFile(Path file) {
+        try {
+            var docs = markdownReader.read(file);
+            var chunks = splitter.split(docs);
+            vectorStore.add(chunks);
+            log.info("MD indexado: {} ({} chunks)", file.getFileName(), chunks.size());
+        } catch (Exception e) {
+            log.error("Error indexando MD: {}", file.getFileName(), e);
+        }
     }
 }
