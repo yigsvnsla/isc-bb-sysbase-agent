@@ -1,0 +1,189 @@
+
+
+QUERY PLAN FOR STATEMENT 1 (at line 1).
+
+Optimized using Serial Mode
+
+
+
+
+
+    STEP 1
+
+        The type of query is SELECT.
+
+
+
+ 1 operator(s) under root
+
+
+
+       |ROOT:EMIT Operator (VA = 1)
+
+       |
+
+       |   |SCAN Operator (VA = 0)
+
+       |   |  FROM TABLE
+
+       |   |  cob_pagos.dbo.cc_tran_servicio
+
+       |   |  (Total Rows: 220)
+
+       |   |  Table Scan.
+
+       |   |  Forward Scan.
+
+       |   |  Positioning at start of table.
+
+       |   |  Using I/O Size 64 Kbytes for data pages.
+
+       |   |  With LRU Buffer Replacement Strategy for data pages.
+
+
+
+
+
+
+
+QUERY PLAN FOR STATEMENT 1 (at line 1).
+
+
+
+
+
+    STEP 1
+
+        The type of query is SET OPTION OFF.
+
+
+
+
+
+QUERY PLAN FOR STATEMENT 1 (at line 1).
+
+Optimized using Serial Mode
+
+
+
+
+
+    STEP 1
+
+        The type of query is SELECT.
+
+
+
+ 1 operator(s) under root
+
+
+
+       |ROOT:EMIT Operator (VA = 1)
+
+       |
+
+       |   |SCAN Operator (VA = 0)
+
+       |   |  FROM TABLE
+
+       |   |  dbo.cl_ente
+
+       |   |  (Total Rows: 1766057)
+
+       |   |  Index : ien_ente
+
+       |   |  Forward Scan.
+
+       |   |  Positioning by key.
+
+       |   |  Keys are:
+
+       |   |    en_ente ASC
+
+       |   |  Using I/O Size 8 Kbytes for index leaf pages.
+
+       |   |  With LRU Buffer Replacement Strategy for index leaf pages.
+
+       |   |  Using I/O Size 8 Kbytes for data pages.
+
+       |   |  With LRU Buffer Replacement Strategy for data pages.
+
+
+
+
+
+
+
+QUERY PLAN FOR STATEMENT 1 (at line 1).
+
+
+
+
+
+    STEP 1
+
+        The type of query is SET OPTION OFF.
+
+
+
+
+
+QUERY PLAN FOR STATEMENT 1 (at line 1).
+
+Optimized using Serial Mode
+
+
+
+
+
+    STEP 1
+
+        The type of query is SELECT.
+
+
+
+ 1 operator(s) under root
+
+
+
+       |ROOT:EMIT Operator (VA = 1)
+
+       |
+
+       |   |SCAN Operator (VA = 0)
+
+       |   |  FROM TABLE
+
+       |   |  cob_pagos.dbo.cc_tran_servicio
+
+       |   |  (Total Rows: 220)
+
+       |   |  Table Scan.
+
+       |   |  Forward Scan.
+
+       |   |  Positioning at start of table.
+
+       |   |  Using I/O Size 64 Kbytes for data pages.
+
+       |   |  With LRU Buffer Replacement Strategy for data pages.
+
+
+
+
+
+
+
+QUERY PLAN FOR STATEMENT 1 (at line 1).
+
+
+
+
+
+    STEP 1
+
+        The type of query is SET OPTION OFF.
+
+
+
+ 

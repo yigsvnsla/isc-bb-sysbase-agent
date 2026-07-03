@@ -33,3 +33,17 @@ build/
 .vscode/
 .env
 pdf_docs/
+
+### Docusaurus ###
+.container/docs/*
+!.container/docs/intro.md
+!.container/docs/**/index.md
+!.container/docs/**/_category_.json
+!.container/docs/estandares/sybase-sqlserver.md
+!.container/docs/estandares/oracle.md
+!.container/docs/estandares/anexos.md
+!.container/docs/estandares/control-cambios.md
+.container/docusaurus/node_modules/
+.container/docusaurus/build/
+.container/docusaurus/.docusaurus/
+.container/onnx-cache/

@@ -29,6 +29,7 @@ public class KnowledgeBaseLoader implements CommandLineRunner {
 
     private final VectorStore vectorStore;
     private final String pdfDir;
+    private final String docsDir;
     private final ResourcePatternResolver resourceResolver;
     private final JdbcTemplate jdbcTemplate;
     private final SqlFileReader sqlFileReader;
@@ -37,12 +38,14 @@ public class KnowledgeBaseLoader implements CommandLineRunner {
 
     public KnowledgeBaseLoader(VectorStore vectorStore,
                                 @Value("${app.knowledge-base.pdf-dir:classpath:static/documents}") String pdfDir,
+                                @Value("${app.knowledge-base.docs-dir:.container/docs}") String docsDir,
                                 ResourcePatternResolver resourceResolver,
                                 JdbcTemplate jdbcTemplate,
                                 SqlFileReader sqlFileReader,
                                 MarkdownReader markdownReader) {
         this.vectorStore = vectorStore;
         this.pdfDir = pdfDir;
+        this.docsDir = docsDir;
         this.resourceResolver = resourceResolver;
         this.jdbcTemplate = jdbcTemplate;
         this.sqlFileReader = sqlFileReader;
@@ -66,12 +69,20 @@ public class KnowledgeBaseLoader implements CommandLineRunner {
         for (var file : sqlFiles) {
             indexSqlFile(file);
         }
+        var txtFiles = resolveTxtFiles();
+        for (var file : txtFiles) {
+            indexTxtFile(file);
+        }
         var mdFiles = resolveMdFiles();
         for (var file : mdFiles) {
             indexMdFile(file);
         }
-        if (pdfs.isEmpty() && sqlFiles.isEmpty() && mdFiles.isEmpty()) {
-            log.info("No se encontraron archivos para indexar en: {}", pdfDir);
+        var docsMdFiles = resolveDocsMdFiles();
+        for (var file : docsMdFiles) {
+            indexMdFile(file);
+        }
+        if (pdfs.isEmpty() && sqlFiles.isEmpty() && txtFiles.isEmpty() && mdFiles.isEmpty() && docsMdFiles.isEmpty()) {
+            log.info("No se encontraron archivos para indexar en: {} ni {}", pdfDir, docsDir);
         }
     }
 
@@ -138,8 +149,18 @@ public class KnowledgeBaseLoader implements CommandLineRunner {
             indexSqlFile(file);
             count++;
         }
+        var txtFiles = resolveTxtFiles();
+        for (var file : txtFiles) {
+            indexTxtFile(file);
+            count++;
+        }
         var mdFiles = resolveMdFiles();
         for (var file : mdFiles) {
+            indexMdFile(file);
+            count++;
+        }
+        var docsMdFiles = resolveDocsMdFiles();
+        for (var file : docsMdFiles) {
             indexMdFile(file);
             count++;
         }
@@ -191,6 +212,51 @@ public class KnowledgeBaseLoader implements CommandLineRunner {
         }
     }
 
+    private List<Path> resolveTxtFiles() {
+        var classpathPattern = "classpath*:static/documents/ejemplos/**/*.txt";
+        try {
+            var resources = resourceResolver.getResources(classpathPattern);
+            var paths = Arrays.stream(resources)
+                    .map(r -> {
+                        try { return r.getFile().toPath(); }
+                        catch (Exception e) { return null; }
+                    })
+                    .filter(Objects::nonNull)
+                    .toList();
+            if (!paths.isEmpty()) {
+                log.info("TXTs encontrados via classpath: {} archivos", paths.size());
+                return paths;
+            }
+        } catch (IOException e) {
+            log.debug("No se pudieron resolver TXTs del classpath: {}", classpathPattern);
+        }
+        var dir = Path.of(pdfDir.replaceFirst("^classpath:", ""));
+        var ejemplosDir = dir.resolve("ejemplos");
+        if (!Files.isDirectory(ejemplosDir)) {
+            return List.of();
+        }
+        try (var files = Files.walk(ejemplosDir)) {
+            var paths = files.filter(f -> f.toString().endsWith(".txt")).toList();
+            if (!paths.isEmpty()) {
+                log.info("TXTs encontrados en {}: {} archivos", ejemplosDir, paths.size());
+            }
+            return paths;
+        } catch (IOException e) {
+            return List.of();
+        }
+    }
+
+    public void indexTxtFile(Path file) {
+        try {
+            var docs = sqlFileReader.readText(file);
+            var chunks = splitter.split(docs);
+            vectorStore.add(chunks);
+            log.info("TXT indexado: {} ({} chunks)", file.getFileName(), chunks.size());
+        } catch (Exception e) {
+            log.error("Error indexando TXT: {}", file.getFileName(), e);
+        }
+    }
+
     private List<Path> resolveMdFiles() {
         var classpathPattern = "classpath*:static/documents/**/*.md";
         try {
@@ -220,6 +286,28 @@ public class KnowledgeBaseLoader implements CommandLineRunner {
             }
             return paths;
         } catch (IOException e) {
+            return List.of();
+        }
+    }
+
+    private List<Path> resolveDocsMdFiles() {
+        var dir = Path.of(docsDir);
+        if (!Files.isDirectory(dir)) {
+            log.debug("Directorio docs-dir no encontrado: {}", docsDir);
+            return List.of();
+        }
+        try (var files = Files.walk(dir)) {
+            var paths = files
+                    .filter(f -> f.toString().endsWith(".md"))
+                    .filter(f -> !f.getFileName().toString().equals("intro.md"))
+                    .filter(f -> !f.getFileName().toString().equals("index.md"))
+                    .toList();
+            if (!paths.isEmpty()) {
+                log.info("MDs encontrados en {}: {} archivos", docsDir, paths.size());
+            }
+            return paths;
+        } catch (IOException e) {
+            log.warn("Error escaneando {}: {}", docsDir, e.getMessage());
             return List.of();
         }
     }

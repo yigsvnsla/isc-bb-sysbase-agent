@@ -58,6 +58,23 @@ services:
         reservations:
           memory: 512M
 
+  docusaurus:
+    build:
+      context: .
+      dockerfile: ./docusaurus/Dockerfile
+    container_name: sp-docusaurus
+    ports:
+      - "3001:3000"
+    restart: unless-stopped
+    profiles:
+      - docs
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+
 volumes:
   postgres-data-sp-docs-pg:
   open-webui-data:

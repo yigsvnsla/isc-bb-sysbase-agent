@@ -1,0 +1,6 @@
+*.pdf
+*.pdf.disabled
+*.doc
+node_modules
+build
+.docusaurus
