@@ -19,7 +19,8 @@ SPRING_PROFILES_ACTIVE=prod ./mvnw spring-boot:run # producción (solo Shell)
 - **Database**: PostgreSQL `localhost:5432/sp_docs` (vars desde `.env`)
 - **Vector store**: PGVector, HNSW index, 384d, auto-schema init
 - **Cache + memory**: Redis (misma instancia para chat memory + cache `sp_source`, `sp_search`)
-- **AI model**: DeepSeek chat (`spring-ai-starter-model-deepseek`) + ONNX Transformer embeddings (`spring-ai-starter-model-transformers`) — default `all-MiniLM-L6-v2` (384d)
+- **AI model**: DeepSeek chat (vía `spring-ai-starter-model-openai`) + ONNX Transformer embeddings (`spring-ai-starter-model-transformers`) — default `all-MiniLM-L6-v2` (384d)
+- **Model Router** (Fase 1+2): `ModelRouter` clasifica cada prompt en tier `CHEAP` o `EXPENSIVE` vía heurística (intent regex + keywords + longitud + historial ≥10 msgs). Para scores en rango gris (0.35-0.55), invoca `LlmClassifier` (micro-LLM, maxTokens=8, temperature=0, timeout 1.5s) que responde `CHEAP`/`EXPENSIVE`. Cache Redis `router:dec:{sha256}` TTL 1h evita reclasificar prompts repetidos. Tres beans `ChatClient` (`chatClientCheap`/`chatClientExpensive`/`chatClientClassifier`) con modelos distintos. Threshold `app.ai.router.score-threshold: 0.6`. Métricas: `ai_router_decisions_total{tier}`, `ai_chat_duration_seconds{tier}`, `ai_router_classifier_calls_total{outcome}`, `ai_router_cache_total{result}` en actuator.
 - **Interfaces**: Spring Shell CLI (principal), REST v1 (controller), REST v2 (functional)
 - **Container**: `.container/compose.yml` (PostgreSQL + Redis); `containerfile` still empty
 

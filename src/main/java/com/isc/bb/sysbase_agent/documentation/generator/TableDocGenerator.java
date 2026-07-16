@@ -99,7 +99,7 @@ public class TableDocGenerator {
         md.append("erDiagram\n");
         md.append("    ").append(info.name()).append(" {\n");
         for (var col : info.columns()) {
-            md.append("        ").append(col.type()).append(" ").append(col.name()).append("\n");
+            md.append("        ").append(mermaidType(col.type())).append(" ").append(col.name()).append("\n");
         }
         md.append("    }\n");
         md.append("```\n\n");
@@ -109,5 +109,12 @@ public class TableDocGenerator {
 
     private String escape(String s) {
         return s == null ? "" : s.replace("|", "\\|").replace("\n", " ");
+    }
+
+    private String mermaidType(String type) {
+        if (type == null || type.isBlank()) return "string";
+        var t = type.replaceAll("\\(.*?\\)", "").trim();
+        t = t.replaceAll("\\s+", "_");
+        return t.isBlank() ? "string" : t;
     }
 }

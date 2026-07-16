@@ -61,10 +61,31 @@ spring:
 app:
     knowledge-base:
         pdf-dir: ${KNOWLEDGE_BASE_PDF_DIR:classpath:static/documents}
+    ai:
+        stream-fix-id: true
+        router:
+            enabled: true
+            cheap-model: ${IA_API_MODEL_CHEAP:deepseek-v4-flash}
+            expensive-model: ${IA_API_MODEL_EXPENSIVE:deepseek-v4-pro}
+            fallback-tier: cheap
+            score-threshold: 0.6
+            gray-low: 0.35
+            gray-high: 0.55
+            classifier:
+                enabled: true
+                model: ${IA_API_MODEL_CHEAP:deepseek-v4-flash}
+                timeout-ms: 1500
+                max-tokens: 8
+            cache:
+                enabled: true
+                ttl-min: 60
     docs:
         active-publisher: docusaurus
         auto-index:
-            enabled: false
+            enabled: true
+            interval-ms: 300000
+            run-on-startup: true
+            force: false
         docusaurus:
             path: ${DOCS_DOCUSAURUS_PATH:.container/docs}
             site-path: ${DOCS_DOCUSAURUS_SITE_PATH:.container/docusaurus}

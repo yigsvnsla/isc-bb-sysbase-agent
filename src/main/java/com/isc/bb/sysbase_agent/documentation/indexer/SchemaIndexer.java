@@ -106,6 +106,12 @@ public class SchemaIndexer {
             } catch (Exception e) {
                 log.error("Error generating schema catalog for {}", schema, e);
             }
+            try {
+                publisher.buildIndex();
+                log.info("Sidebar regenerado para schema: {}", schema);
+            } catch (Exception e) {
+                log.error("Error regenerating sidebar for {}", schema, e);
+            }
         }
 
         return result;

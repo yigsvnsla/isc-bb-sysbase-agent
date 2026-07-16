@@ -57,11 +57,17 @@ public class OpenAiCompatController {
             return ResponseEntity.badRequest().body(Flux.just("{\"error\":\"No user message found\"}"));
         }
 
-        log.debug("→ chat/completions: conv={}, msg={}", convId, truncate(userMsg));
-
         var model = req.model() != null ? req.model() : "sysbase-agent";
         var chunkId = "chatcmpl-" + UUID.randomUUID().toString().substring(0, 8);
         var created = System.currentTimeMillis() / 1000;
+
+        if (isOpenWebUiTaskRequest(userMsg)) {
+            log.debug("→ owui-task: conv={}", convId);
+            return handleOpenWebUiTask(userMsg, model, chunkId, created);
+        }
+
+        log.debug("→ chat/completions: conv={}, msg={}", convId, truncate(userMsg));
+
         var isFirstChunk = new AtomicBoolean(true);
 
         var lineBuf = new StringBuilder();
@@ -105,6 +111,48 @@ public class OpenAiCompatController {
         return ResponseEntity.ok()
                 .contentType(MediaType.TEXT_EVENT_STREAM)
                 .body(sseFlux);
+    }
+
+    private boolean isOpenWebUiTaskRequest(String msg) {
+        return msg != null && msg.startsWith("### Task:");
+    }
+
+    private ResponseEntity<Flux<String>> handleOpenWebUiTask(String userMsg, String model, String chunkId, long created) {
+        try {
+            var response = agentService.chat("owui-task-" + UUID.randomUUID(), userMsg);
+            var json = extractJsonFromResponse(response);
+            return buildSseResponse(json, model, chunkId, created);
+        } catch (Exception e) {
+            log.error("Error handling Open WebUI task", e);
+            return ResponseEntity.ok()
+                    .contentType(MediaType.TEXT_EVENT_STREAM)
+                    .body(Flux.just("{\"error\":\"" + escapeJson(e.getMessage()) + "\"}", "[DONE]"));
+        }
+    }
+
+    private ResponseEntity<Flux<String>> buildSseResponse(String content, String model, String chunkId, long created) {
+        var chunk = new OpenAiChunk(chunkId, "chat.completion.chunk", created, model,
+                List.of(new Choice(0, new Delta("assistant", content), "stop")));
+        var flux = Flux.just(toJson(chunk), "[DONE]");
+        return ResponseEntity.ok()
+                .contentType(MediaType.TEXT_EVENT_STREAM)
+                .body(flux);
+    }
+
+    private String extractJsonFromResponse(String response) {
+        if (response == null || response.isBlank()) {
+            return "{}";
+        }
+        var cleaned = response
+                .replaceAll("```json\\s*", "")
+                .replaceAll("```\\s*", "")
+                .trim();
+        var start = cleaned.indexOf('{');
+        var end = cleaned.lastIndexOf('}');
+        if (start >= 0 && end > start) {
+            return cleaned.substring(start, end + 1).trim();
+        }
+        return cleaned;
     }
 
     private String resolveConversationId(OpenAiChatRequest req) {

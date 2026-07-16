@@ -349,6 +349,12 @@ public class PostgresTools {
                 FROM pg_catalog.pg_type t
                 JOIN pg_catalog.pg_namespace n ON n.oid = t.typnamespace
                 WHERE n.nspname = ? AND t.typtype = 'c'
+                  AND NOT EXISTS (
+                      SELECT 1 FROM pg_catalog.pg_class c
+                      WHERE c.relnamespace = n.oid
+                        AND c.relname = t.typname
+                        AND c.relkind = 'r'
+                  )
                 ORDER BY t.typname
                 """;
         return jdbc.query(sql, (rs, row) -> new CompositeTypeRef(schema, rs.getString("name")), schema);
