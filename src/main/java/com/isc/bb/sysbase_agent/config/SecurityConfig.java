@@ -18,10 +18,18 @@ import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
+import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.access.intercept.AuthorizationFilter;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+import com.isc.bb.sysbase_agent.audit.AuditRepository;
 import com.isc.bb.sysbase_agent.security.ApiKeyAuthFilter;
+import com.isc.bb.sysbase_agent.security.ApiKeyRepository;
+import com.isc.bb.sysbase_agent.security.AuthAuditFilter;
+
+import io.micrometer.core.instrument.MeterRegistry;
+import jakarta.servlet.http.HttpServletResponse;
 
 @Configuration
 @EnableWebSecurity
@@ -34,6 +42,9 @@ public class SecurityConfig {
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http,
                                             ApiKeyAuthFilter apiKeyAuthFilter,
+                                            AuthAuditFilter authAuditFilter,
+                                            AuditRepository audit,
+                                            MeterRegistry meters,
                                             JwtAuthenticationConverter jwtAuthenticationConverter) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
@@ -41,9 +52,30 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/models", "/actuator/health").permitAll()
                         .anyRequest().authenticated())
-                .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter)))
-                .addFilterBefore(apiKeyAuthFilter, UsernamePasswordAuthenticationFilter.class);
+                .oauth2ResourceServer(oauth2 -> oauth2
+                        .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter))
+                        .authenticationEntryPoint(auditEntryPoint(audit, meters)))
+                .exceptionHandling(ex -> ex.authenticationEntryPoint(auditEntryPoint(audit, meters)))
+                .addFilterBefore(apiKeyAuthFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterAfter(authAuditFilter, AuthorizationFilter.class);
         return http.build();
+    }
+
+    @Bean
+    ApiKeyAuthFilter apiKeyAuthFilter(ApiKeyRepository apiKeyRepository,
+                                      @Value("${app.security.api-keys.enabled:true}") boolean enabled) {
+        return new ApiKeyAuthFilter(apiKeyRepository, enabled);
+    }
+
+    private AuthenticationEntryPoint auditEntryPoint(AuditRepository audit, MeterRegistry meters) {
+        return (request, response, ex) -> {
+            try {
+                audit.recordAuth(null, null, false);
+                meters.counter("ai_auth_events_total", "method", "unknown", "result", "failure").increment();
+            } catch (Exception ignored) {
+            }
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized");
+        };
     }
 
     @Bean

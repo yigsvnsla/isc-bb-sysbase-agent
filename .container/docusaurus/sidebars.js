@@ -213,6 +213,7 @@ const sidebars = {
         'secuencias/cobis/cobis_tmp_log_phol2_id_seq',
         'secuencias/cobis/cobis_ts_telefono_id_seq',
         'secuencias/public/public_api_keys_id_seq',
+        'secuencias/public/public_ai_audit_id_seq',
       ],
     },
     {
@@ -242,6 +243,7 @@ const sidebars = {
         'tablas/cob_remesas/cob_remesas_re_horario',
         'tablas/public/public_vector_store',
         'tablas/public/public_api_keys',
+        'tablas/public/public_ai_audit',
       ],
     },
   ],

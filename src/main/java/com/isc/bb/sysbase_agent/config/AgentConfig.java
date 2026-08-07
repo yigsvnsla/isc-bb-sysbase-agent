@@ -3,12 +3,15 @@ package com.isc.bb.sysbase_agent.config;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.Arrays;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import org.springframework.ai.openai.OpenAiChatOptions;
+import org.springframework.ai.support.ToolCallbacks;
+import org.springframework.ai.tool.ToolCallback;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
@@ -17,10 +20,15 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.util.StreamUtils;
 
+import io.micrometer.core.instrument.MeterRegistry;
+
 import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
+import com.isc.bb.sysbase_agent.audit.AuditRepository;
 import com.isc.bb.sysbase_agent.memory.RedisChatMemoryRepository;
+import com.isc.bb.sysbase_agent.security.AuditedToolCallback;
+import com.isc.bb.sysbase_agent.security.ToolAccessGuard;
 import com.isc.bb.sysbase_agent.tools.KnowledgeBaseTool;
 import com.isc.bb.sysbase_agent.tools.PostgresTools;
 
@@ -60,34 +68,43 @@ public class AgentConfig {
                 .build();
     }
 
+    @Bean
+    ToolCallback[] agentToolCallbacks(PostgresTools postgresTools,
+                                      KnowledgeBaseTool knowledgeBaseTool,
+                                      ToolAccessGuard guard,
+                                      AuditRepository audit,
+                                      ObjectMapper objectMapper,
+                                      MeterRegistry meters) {
+        return Arrays.stream(ToolCallbacks.from(postgresTools, knowledgeBaseTool))
+                .map(tc -> new AuditedToolCallback(tc, guard, audit, objectMapper, meters))
+                .toArray(ToolCallback[]::new);
+    }
+
     @Bean(name = "chatClientCheap")
     ChatClient chatClientCheap(ChatClient.Builder builder,
-                               PostgresTools postgresTools,
-                               KnowledgeBaseTool knowledgeBaseTool,
+                               ToolCallback[] toolCallbacks,
                                ChatMemory chatMemory,
                                @Value("${app.ai.router.cheap-model:deepseek-v4-flash}") String cheapModel) {
-        return configureClient(builder, postgresTools, knowledgeBaseTool, chatMemory, cheapModel);
+        return configureClient(builder, toolCallbacks, chatMemory, cheapModel);
     }
 
     @Bean(name = "chatClientExpensive")
     ChatClient chatClientExpensive(ChatClient.Builder builder,
-                                   PostgresTools postgresTools,
-                                   KnowledgeBaseTool knowledgeBaseTool,
+                                   ToolCallback[] toolCallbacks,
                                    ChatMemory chatMemory,
                                    @Value("${app.ai.router.expensive-model:deepseek-v4-pro}") String expensiveModel) {
-        return configureClient(builder, postgresTools, knowledgeBaseTool, chatMemory, expensiveModel);
+        return configureClient(builder, toolCallbacks, chatMemory, expensiveModel);
     }
 
     private ChatClient configureClient(ChatClient.Builder builder,
-                                       PostgresTools postgresTools,
-                                       KnowledgeBaseTool knowledgeBaseTool,
+                                       ToolCallback[] toolCallbacks,
                                        ChatMemory chatMemory,
                                        String model) {
         return builder.clone()
                 .defaultOptions(OpenAiChatOptions.builder().model(model))
                 .defaultSystem(SYSTEM_PROMPT)
                 .defaultAdvisors(MessageChatMemoryAdvisor.builder(chatMemory).build())
-                .defaultTools(postgresTools, knowledgeBaseTool)
+                .defaultTools((Object[]) toolCallbacks)
                 .build();
     }
 
