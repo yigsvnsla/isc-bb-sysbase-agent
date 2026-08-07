@@ -84,4 +84,44 @@ class MarkdownFixerTest {
         var expected = "## Título\n\n```sql\nSELECT 1\n```\n\n```mermaid\nflowchart LR\n```";
         assertEquals(expected, MarkdownFixer.fix(input));
     }
+
+    @Test
+    void nodeLabelWithParensIsQuoted() {
+        var input = "```mermaid\nflowchart TD\n    A[cc_tran_servicio (hoy)<br>+ cc_tran_s] --> B[Fin]\n```";
+        var expected = "```mermaid\nflowchart TD\n    A[\"cc_tran_servicio (hoy)<br>+ cc_tran_s\"] --> B[Fin]\n```";
+        assertEquals(expected, MarkdownFixer.fix(input));
+    }
+
+    @Test
+    void diamondAndEdgeLabelsWithParensAreQuoted() {
+        var input = "```mermaid\nflowchart TD\n    C{existe (hoy)} -->|inserta (1)| D\n```";
+        var expected = "```mermaid\nflowchart TD\n    C{\"existe (hoy)\"} -->|\"inserta (1)\"| D\n```";
+        assertEquals(expected, MarkdownFixer.fix(input));
+    }
+
+    @Test
+    void subgraphTitleWithParensIsQuoted() {
+        var input = "```mermaid\nflowchart TD\n    subgraph SG[Grupo (hoy)]\n    A --> B\n    end\n```";
+        var expected = "```mermaid\nflowchart TD\n    subgraph SG[\"Grupo (hoy)\"]\n    A --> B\n    end\n```";
+        assertEquals(expected, MarkdownFixer.fix(input));
+    }
+
+    @Test
+    void alreadyQuotedLabelUnchanged() {
+        var input = "```mermaid\nflowchart TD\n    A[\"cc_tran_servicio (hoy)\"] --> B\n```";
+        assertEquals(input, MarkdownFixer.fix(input));
+    }
+
+    @Test
+    void labelWithoutSpecialCharsUnchanged() {
+        var input = "```mermaid\nflowchart TD\n    A[foo + bar - baz] --> B[fin: ok]\n```";
+        assertEquals(input, MarkdownFixer.fix(input));
+    }
+
+    @Test
+    void labelsOutsideMermaidBlocksUntouched() {
+        var input = "```sql\nSELECT a[foo (hoy)] FROM t\n```\n\nTexto suelto: A[foo (hoy)]\n```mermaid\nflowchart TD\n    A --> B\n```";
+        var expected = "```sql\nSELECT a[foo (hoy)] FROM t\n```\n\nTexto suelto: A[foo (hoy)]\n```mermaid\nflowchart TD\n    A --> B\n```";
+        assertEquals(expected, MarkdownFixer.fix(input));
+    }
 }
