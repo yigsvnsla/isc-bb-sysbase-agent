@@ -1,0 +1,28 @@
+spring:
+    ai:
+        openai:
+            api-key: test-key
+            base-url: http://localhost:0
+            chat:
+                model: deepseek-v4-flash
+                temperature: 0.0
+                max-tokens: 512
+    datasource:
+        url: jdbc:postgresql://localhost:5432/test
+        username: test
+        password: test
+app:
+    docs:
+        auto-index:
+            enabled: false
+            run-on-startup: false
+        active-publisher: docusaurus
+    security:
+        jwt:
+            secret: test-secret-para-e2e-32-bytes-minimo-ok
+        api-keys:
+            enabled: true
+logging:
+    level:
+        com.isc.bb.sysbase_agent: INFO
+        org.springframework.ai: INFO

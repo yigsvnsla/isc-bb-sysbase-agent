@@ -12,7 +12,7 @@ public class AgentRoutes {
     @Bean
     RouterFunction<ServerResponse> agentRouterFunction(AgentHandler handler) {
         return RouterFunctions.route()
-                .POST("/api/v2/agent/chat", handler::chat)
+                .POST("/v2/agent/chat", handler::chat)
                 .build();
     }
 }
