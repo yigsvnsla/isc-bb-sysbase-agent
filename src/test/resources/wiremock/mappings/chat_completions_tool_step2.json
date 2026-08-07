@@ -1,0 +1,39 @@
+{
+  "priority": 1,
+  "request": {
+    "method": "POST",
+    "urlPath": "/chat/completions",
+    "bodyPatterns": [
+      {
+        "contains": "\"role\":\"tool\""
+      }
+    ]
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "jsonBody": {
+      "id": "chatcmpl-tool-002",
+      "object": "chat.completion",
+      "created": 1750000000,
+      "model": "deepseek-v4-flash",
+      "choices": [
+        {
+          "index": 0,
+          "message": {
+            "role": "assistant",
+            "content": "Búsqueda de procedures finalizada con éxito. Los resultados fueron consultados directamente en la base de datos."
+          },
+          "finish_reason": "stop"
+        }
+      ],
+      "usage": {
+        "prompt_tokens": 60,
+        "completion_tokens": 18,
+        "total_tokens": 78
+      }
+    }
+  }
+}

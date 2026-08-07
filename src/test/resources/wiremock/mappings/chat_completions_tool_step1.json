@@ -1,0 +1,49 @@
+{
+  "priority": 1,
+  "request": {
+    "method": "POST",
+    "urlPath": "/chat/completions",
+    "bodyPatterns": [
+      {
+        "contains": "listame"
+      }
+    ]
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "jsonBody": {
+      "id": "chatcmpl-tool-001",
+      "object": "chat.completion",
+      "created": 1750000000,
+      "model": "deepseek-v4-flash",
+      "choices": [
+        {
+          "index": 0,
+          "message": {
+            "role": "assistant",
+            "content": null,
+            "tool_calls": [
+              {
+                "id": "call_search_1",
+                "type": "function",
+                "function": {
+                  "name": "search_procedures",
+                  "arguments": "{\"pattern\":\"%\"}"
+                }
+              }
+            ]
+          },
+          "finish_reason": "tool_calls"
+        }
+      ],
+      "usage": {
+        "prompt_tokens": 45,
+        "completion_tokens": 22,
+        "total_tokens": 67
+      }
+    }
+  }
+}

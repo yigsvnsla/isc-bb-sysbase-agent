@@ -3,6 +3,9 @@ spring:
         name: sysbase-agent
     config:
         import: "optional:file:.env[.properties]"
+    sql:
+        init:
+            mode: always
     datasource:
         url: jdbc:postgresql://${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
         username: ${POSTGRES_USER}
@@ -79,6 +82,14 @@ app:
             cache:
                 enabled: true
                 ttl-min: 60
+    security:
+        jwt:
+            secret: ${JWT_SECRET:dev-only-secret-cambiar-en-produccion-32bytes}
+            # TODO(futuro): fallar el arranque en prod si JWT_SECRET sigue siendo el default.
+            ttl-minutes: ${JWT_TTL_MINUTES:60}
+        cors-origins: ${CORS_ORIGINS:http://localhost:3000}
+        # TODO(futuro): definir dominios reales de producción y fijar allowlist estricta.
+        # TODO(futuro): scopes finos por API key (no solo roles).
     docs:
         active-publisher: docusaurus
         auto-index:
