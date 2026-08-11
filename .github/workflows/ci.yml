@@ -21,3 +21,10 @@ jobs:
 
       - name: Build and test
         run: ./mvnw -B -ntp verify
+
+      - name: Upload SBOM
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom
+          path: target/bom.json
+          if-no-files-found: warn

@@ -4,7 +4,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.junit.jupiter.api.extension.ConditionEvaluationResult;
+import org.junit.jupiter.api.extension.ExecutionCondition;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.ExtensionContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.DynamicPropertyRegistry;
@@ -22,7 +25,7 @@ import com.isc.bb.sysbase_agent.service.AgentService;
  */
 @Tag("e2e")
 @Tag("llm")
-@EnabledIfEnvironmentVariable(named = "IA_API_KEY", matches = ".+")
+@ExtendWith(EvalHarnessTest.LlmKeyCondition.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 class EvalHarnessTest {
 
@@ -48,9 +51,9 @@ class EvalHarnessTest {
         registry.add("spring.datasource.password", postgres::getPassword);
         registry.add("spring.data.redis.host", redis::getHost);
         registry.add("spring.data.redis.port", () -> redis.getMappedPort(6379));
-        registry.add("spring.ai.openai.api-key", () -> System.getenv("IA_API_KEY"));
+        registry.add("spring.ai.openai.api-key", () -> resolveSecret("IA_API_KEY", ""));
         registry.add("spring.ai.openai.base-url",
-                () -> System.getenv().getOrDefault("IA_API_BASE_URL", "https://api.deepseek.com"));
+                () -> resolveSecret("IA_API_BASE_URL", "https://api.deepseek.com"));
         registry.add("app.ai.router.cache.enabled", () -> "false");
     }
 
@@ -147,5 +150,34 @@ class EvalHarnessTest {
         var r = agentService.chat("eval-11",
                 "explica brevemente qué es un índice en PostgreSQL usando encabezados markdown");
         assertThat(r).as("s11").contains("## ");
+    }
+
+    static String resolveSecret(String name, String fallback) {
+        var env = System.getenv(name);
+        if (env != null && !env.isBlank()) {
+            return env;
+        }
+        try {
+            var props = new java.util.Properties();
+            try (var in = new java.io.FileInputStream(".env")) {
+                props.load(in);
+            }
+            var fromFile = props.getProperty(name);
+            if (fromFile != null && !fromFile.isBlank()) {
+                return fromFile;
+            }
+        } catch (Exception ignored) {
+        }
+        return fallback;
+    }
+
+    static class LlmKeyCondition implements ExecutionCondition {
+        @Override
+        public ConditionEvaluationResult evaluateExecutionCondition(ExtensionContext context) {
+            boolean available = !resolveSecret("IA_API_KEY", "").isBlank();
+            return available
+                    ? ConditionEvaluationResult.enabled("IA_API_KEY disponible")
+                    : ConditionEvaluationResult.disabled("IA_API_KEY no disponible (env real o .env)");
+        }
     }
 }
