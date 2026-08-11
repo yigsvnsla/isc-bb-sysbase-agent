@@ -59,9 +59,10 @@ public class AuditedToolCallback implements ToolCallback {
         }
         var startNanos = System.nanoTime();
         try {
-            var result = toolContext != null ? delegate.call(toolInput, toolContext) : delegate.call(toolInput);
+            var raw = toolContext != null ? delegate.call(toolInput, toolContext) : delegate.call(toolInput);
+            var wrapped = wrapRetrievedData(raw);
             recordTool(name, toolInput, true, startNanos, null);
-            return result;
+            return wrapped;
         } catch (Throwable t) {
             recordTool(name, toolInput, false, startNanos, t.getMessage());
             throw t;
@@ -75,6 +76,13 @@ public class AuditedToolCallback implements ToolCallback {
             meters.counter("ai_tool_calls_total", "tool", name, "ok", String.valueOf(ok)).increment();
         } catch (Exception ignored) {
         }
+    }
+
+    private String wrapRetrievedData(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return raw;
+        }
+        return "<retrieved_data>\n" + raw + "\n</retrieved_data>";
     }
 
     private String currentRole() {
@@ -113,4 +121,6 @@ public class AuditedToolCallback implements ToolCallback {
 
     // TODO(futuro): filtrar las tools del schema LLM por rol (mejor que rechazo en runtime).
     // TODO(futuro): registrar index_procedure (SpDocLoader) en el conjunto de tools.
+    // TODO(futuro): detector post-hoc de tool-calls inyectados (LLM-judge sobre la cadena de llamadas).
+    // TODO(futuro): HITL para index_procedure cuando se registre: flujo REST 202 + endpoint de aprobación.
 }

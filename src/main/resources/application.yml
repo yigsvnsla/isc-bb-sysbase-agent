@@ -66,6 +66,11 @@ app:
         pdf-dir: ${KNOWLEDGE_BASE_PDF_DIR:classpath:static/documents}
     ai:
         stream-fix-id: true
+        budget:
+            enabled: true
+            requests-per-day: 500
+            chars-per-day: 400000
+            msgs-per-conversation: 100
         router:
             enabled: true
             cheap-model: ${IA_API_MODEL_CHEAP:deepseek-v4-flash}
@@ -88,6 +93,10 @@ app:
             # TODO(futuro): fallar el arranque en prod si JWT_SECRET sigue siendo el default.
             ttl-minutes: ${JWT_TTL_MINUTES:60}
         cors-origins: ${CORS_ORIGINS:http://localhost:3000}
+        rate-limit:
+            enabled: true
+            user-per-minute: 60
+            ip-per-minute: 20
         # TODO(futuro): definir dominios reales de producción y fijar allowlist estricta.
         # TODO(futuro): scopes finos por API key (no solo roles).
     docs:

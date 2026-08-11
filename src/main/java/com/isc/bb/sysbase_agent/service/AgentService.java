@@ -37,19 +37,22 @@ public class AgentService {
     private final ChatMemory chatMemory;
     private final MeterRegistry meterRegistry;
     private final AuditRepository audit;
+    private final TokenBudgetService budget;
 
     public AgentService(@Qualifier("chatClientCheap") ChatClient cheapClient,
                         @Qualifier("chatClientExpensive") ChatClient expensiveClient,
                         ModelRouter router,
                         ChatMemory chatMemory,
                         MeterRegistry meterRegistry,
-                        AuditRepository audit) {
+                        AuditRepository audit,
+                        TokenBudgetService budget) {
         this.cheapClient = cheapClient;
         this.expensiveClient = expensiveClient;
         this.router = router;
         this.chatMemory = chatMemory;
         this.meterRegistry = meterRegistry;
         this.audit = audit;
+        this.budget = budget;
     }
 
     public String chat(String conversationId, String message) {
@@ -61,6 +64,13 @@ public class AgentService {
                 attrs.setAttribute("sysbase-trace", traceId, RequestAttributes.SCOPE_REQUEST);
             }
         } catch (Exception ignored) {
+        }
+        var budgetUser = currentUser();
+        if (!budget.allowRequest(budgetUser)) {
+            return "Límite diario de peticiones alcanzado para este usuario. Intenta mañana.";
+        }
+        if (!budget.allowMessage(conversationId)) {
+            return "Límite de mensajes alcanzado para esta conversación.";
         }
         var decision = decide(conversationId, message);
         var client = decision.tier() == Tier.EXPENSIVE ? expensiveClient : cheapClient;
@@ -74,6 +84,7 @@ public class AgentService {
                     .content();
             log.debug("← respuesta: conv={}, chars={}", conversationId, response.length());
             var fixed = MarkdownFixer.fix(response);
+            budget.recordChars(budgetUser, response.length());
             recordTurn(decision, conversationId, traceId, message, fixed, startNanos, null);
             return fixed;
         } catch (Exception e) {

@@ -27,6 +27,7 @@ import com.isc.bb.sysbase_agent.audit.AuditRepository;
 import com.isc.bb.sysbase_agent.security.ApiKeyAuthFilter;
 import com.isc.bb.sysbase_agent.security.ApiKeyRepository;
 import com.isc.bb.sysbase_agent.security.AuthAuditFilter;
+import com.isc.bb.sysbase_agent.security.RateLimitFilter;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.servlet.http.HttpServletResponse;
@@ -43,6 +44,7 @@ public class SecurityConfig {
     SecurityFilterChain securityFilterChain(HttpSecurity http,
                                             ApiKeyAuthFilter apiKeyAuthFilter,
                                             AuthAuditFilter authAuditFilter,
+                                            RateLimitFilter rateLimitFilter,
                                             AuditRepository audit,
                                             MeterRegistry meters,
                                             JwtAuthenticationConverter jwtAuthenticationConverter) throws Exception {
@@ -57,7 +59,8 @@ public class SecurityConfig {
                         .authenticationEntryPoint(auditEntryPoint(audit, meters)))
                 .exceptionHandling(ex -> ex.authenticationEntryPoint(auditEntryPoint(audit, meters)))
                 .addFilterBefore(apiKeyAuthFilter, UsernamePasswordAuthenticationFilter.class)
-                .addFilterAfter(authAuditFilter, AuthorizationFilter.class);
+                .addFilterAfter(authAuditFilter, AuthorizationFilter.class)
+                .addFilterAfter(rateLimitFilter, AuthAuditFilter.class);
         return http.build();
     }
 
