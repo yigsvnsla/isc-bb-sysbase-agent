@@ -45,4 +45,7 @@ public class AuthAuditFilter extends OncePerRequestFilter {
             }
         }
     }
+
+    // TODO(futuro): skip audit para status 429 y rutas actuator — reintentar con filtro de una sola cadena.
+    // (causa 401: el filtro se registra en la cadena servlet Y en la security chain — cambios anteriores lo rompían).
 }

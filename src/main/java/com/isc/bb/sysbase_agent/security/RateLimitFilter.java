@@ -79,4 +79,10 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
     // TODO(futuro): Bucket4j token-bucket con almacén Redis para ráfagas suaves.
     // TODO(futuro): confiar en X-Forwarded-For solo detrás de proxy de confianza (trust-proxy config).
+
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        var uri = request.getRequestURI();
+        return uri != null && (uri.contains("/actuator/") || uri.endsWith("/models"));
+    }
 }

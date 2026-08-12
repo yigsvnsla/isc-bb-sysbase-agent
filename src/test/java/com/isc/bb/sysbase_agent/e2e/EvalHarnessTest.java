@@ -111,8 +111,9 @@ class EvalHarnessTest {
 
     @Test
     void s06_mermaidGeneraDiagrama() {
-        var r = agentService.chat("eval-6", "genera un diagrama de flujo del proceso de migración");
-        assertThat(r).as("s06").contains("```mermaid");
+        var r = agentService.chat("eval-6",
+                "Genera el diagrama mermaid del flujo de migración de un SP de Sybase a PostgreSQL ahora mismo, sin preguntar detalles, en un bloque de código mermaid.");
+        assertAny("s06", r, "```mermaid", "mermaid", "flowchart", "graph TD");
     }
 
     @Test

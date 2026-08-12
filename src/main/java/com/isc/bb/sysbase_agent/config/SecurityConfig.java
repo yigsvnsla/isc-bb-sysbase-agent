@@ -59,8 +59,8 @@ public class SecurityConfig {
                         .authenticationEntryPoint(auditEntryPoint(audit, meters)))
                 .exceptionHandling(ex -> ex.authenticationEntryPoint(auditEntryPoint(audit, meters)))
                 .addFilterBefore(apiKeyAuthFilter, UsernamePasswordAuthenticationFilter.class)
-                .addFilterAfter(authAuditFilter, AuthorizationFilter.class)
-                .addFilterAfter(rateLimitFilter, AuthAuditFilter.class);
+                .addFilterAfter(rateLimitFilter, AuthorizationFilter.class)
+                .addFilterAfter(authAuditFilter, RateLimitFilter.class);
         return http.build();
     }
 
