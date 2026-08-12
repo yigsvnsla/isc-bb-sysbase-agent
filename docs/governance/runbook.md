@@ -19,7 +19,8 @@ Restaurar PG: `podman exec -i sp-docs-pg psql -U $POSTGRES_USER -d $POSTGRES_DB 
 2. **Caída de Redis**: el agente funciona sin memoria/cache (degradado); las conversaciones se pierden por diseño (TTL 6h).
 3. **Caída de la app**: reiniciar; sin estado local (todo en PG/Redis).
 4. **API key comprometida**: `apikey-revoke`, rotar JWT_SECRET (cambia firma → todos los JWT emisores deben actualizar).
-5. **Proveedor LLM caído**: el agente responde con error controlado; considerar base-url alternativo en `.env`.
+5. **Rotación de JWT_SECRET sin downtime**: (a) setear `JWT_PREVIOUS_SECRET` con el secreto actual y reiniciar — los tokens emitidos con el secreto viejo siguen válidos; (b) cambiar `JWT_SECRET` al nuevo valor y reiniciar; (c) una vez todos los tokens viejos expiren (TTL), limpiar `JWT_PREVIOUS_SECRET`. Nunca rotar ambos al mismo tiempo.
+6. **Proveedor LLM caído**: el agente responde con error controlado; considerar base-url alternativo en `.env`.
 
 ## Pruebas de DR
 - Trimestral: restaurar dump en contenedor de pruebas y verificar `audit-tail` + 1 consulta RAG.

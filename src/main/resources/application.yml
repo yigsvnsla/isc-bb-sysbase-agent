@@ -90,7 +90,7 @@ app:
     security:
         jwt:
             secret: ${JWT_SECRET:dev-only-secret-cambiar-en-produccion-32bytes}
-            # TODO(futuro): fallar el arranque en prod si JWT_SECRET sigue siendo el default.
+            previous-secret: ${JWT_PREVIOUS_SECRET:}
             ttl-minutes: ${JWT_TTL_MINUTES:60}
         cors-origins: ${CORS_ORIGINS:http://localhost:3000}
         rate-limit:
@@ -129,6 +129,10 @@ management:
         sampling:
             probability: 1.0
         # TODO(futuro): sampling 0.1 en producción (ver application-prod.yml).
+    endpoints:
+        web:
+            exposure:
+                include: health
     otlp:
         tracing:
             endpoint: ${OTEL_EXPORTER_ENDPOINT:}

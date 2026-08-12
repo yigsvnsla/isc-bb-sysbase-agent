@@ -27,6 +27,7 @@ import com.isc.bb.sysbase_agent.audit.AuditRepository;
 import com.isc.bb.sysbase_agent.security.ApiKeyAuthFilter;
 import com.isc.bb.sysbase_agent.security.ApiKeyRepository;
 import com.isc.bb.sysbase_agent.security.AuthAuditFilter;
+import com.isc.bb.sysbase_agent.security.JwtDecoders;
 import com.isc.bb.sysbase_agent.security.RateLimitFilter;
 
 import io.micrometer.core.instrument.MeterRegistry;
@@ -82,9 +83,9 @@ public class SecurityConfig {
     }
 
     @Bean
-    JwtDecoder jwtDecoder(@Value("${app.security.jwt.secret}") String secret) {
-        SecretKey key = new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
-        return NimbusJwtDecoder.withSecretKey(key).macAlgorithm(MacAlgorithm.HS256).build();
+    JwtDecoder jwtDecoder(@Value("${app.security.jwt.secret}") String secret,
+                          @Value("${app.security.jwt.previous-secret:}") String previousSecret) {
+        return JwtDecoders.withFallback(secret, previousSecret);
     }
 
     @Bean

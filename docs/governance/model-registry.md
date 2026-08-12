@@ -21,6 +21,7 @@
 | 2026-08 | Extracción del system prompt a system.md | commit 4fbf3f4 | AI Steward |
 
 TODO(futuro): registrar hash SHA-256 del prompt activo en cada release; eval delta antes/después de cada cambio de modelo o prompt.
+Rotación de JWT: soporte de 2 secretos (`JWT_SECRET` actual + `JWT_PREVIOUS_SECRET` en transición) — ver runbook.md.
 
 ## Proveedor
 - DeepSeek API (vía spring-ai-starter-model-openai con base-url configurable). Riesgo de proveedor externo documentado en risk-register.md.
