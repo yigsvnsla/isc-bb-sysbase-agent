@@ -5,6 +5,12 @@
 - Consumo API: `token-create` / `apikey-create` (CLI), header `Authorization: Bearer` o `X-API-Key`.
 - Auditoría: `audit-tail`, `audit-search` (CLI).
 - Observabilidad (profile otel): `podman compose -f .container/compose.yml --profile otel up -d` — Tempo :4318, Grafana :3002, Prometheus :9090, Alertmanager :9093.
+- Keycloak (profile keycloak): `podman compose -f .container/compose.yml --profile keycloak up -d keycloak` y tras el primer arranque `./.container/keycloak/setup.sh` (crea realm `sysbase` + client `sysbase-agent` + user `agent-test`/`test1234` con rol DOC vía admin API). La app acepta tokens Keycloak si `OIDC_ISSUER_URI=http://localhost:8081/realms/sysbase` está seteado (soporte dual con JWT propio: primero se intenta el JWT HMAC interno, luego el issuer OIDC).
+
+## Auth (JWT propio vs Keycloak)
+- JWT propio (HS256, `JWT_SECRET`): emisión por CLI (`token-create`), usado por defecto.
+- Keycloak (OIDC/JWKS): activable con `OIDC_ISSUER_URI` — los roles se leen de `realm_access.roles` (READONLY/DOC/ADMIN) vía el JWT converter.
+- Nota de operación: el import de realms por JSON rompe el direct grant en Keycloak 26 (`resolve_required_actions`); por eso `setup.sh` crea el realm por admin API. No reintroducir `--import-realm`.
 
 ## Alertas (P1/P2/P3)
 - Reglas: `.container/prometheus/alert.rules.yml` (severity critical/warning/info → rutas Alertmanager).

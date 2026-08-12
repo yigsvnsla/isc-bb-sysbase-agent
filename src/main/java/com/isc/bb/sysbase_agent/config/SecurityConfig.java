@@ -1,6 +1,7 @@
 package com.isc.bb.sysbase_agent.config;
 
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.crypto.SecretKey;
@@ -16,6 +17,7 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.JwtException;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.AuthenticationEntryPoint;
@@ -37,7 +39,6 @@ import jakarta.servlet.http.HttpServletResponse;
 @EnableWebSecurity
 public class SecurityConfig {
 
-    // TODO(futuro): migrar a Identity Provider externo (Keycloak/Auth0) — hoy JWT autogenerado HMAC.
     // TODO(futuro): rotación de JWT_SECRET sin downtime (2 keys activas con kid).
     // TODO(futuro): rate limiting por usuario/token (Bucket4j o Spring Cloud Gateway).
 
@@ -84,8 +85,20 @@ public class SecurityConfig {
 
     @Bean
     JwtDecoder jwtDecoder(@Value("${app.security.jwt.secret}") String secret,
-                          @Value("${app.security.jwt.previous-secret:}") String previousSecret) {
-        return JwtDecoders.withFallback(secret, previousSecret);
+                          @Value("${app.security.jwt.previous-secret:}") String previousSecret,
+                          @Value("${app.security.oidc.issuer-uri:}") String oidcIssuer) {
+        var own = JwtDecoders.withFallback(secret, previousSecret);
+        if (oidcIssuer == null || oidcIssuer.isBlank()) {
+            return own;
+        }
+        var oidc = org.springframework.security.oauth2.jwt.JwtDecoders.fromIssuerLocation(oidcIssuer);
+        return token -> {
+            try {
+                return own.decode(token);
+            } catch (JwtException e) {
+                return oidc.decode(token);
+            }
+        };
     }
 
     @Bean
@@ -93,7 +106,23 @@ public class SecurityConfig {
         var converter = new JwtAuthenticationConverter();
         converter.setJwtGrantedAuthoritiesConverter(jwt -> {
             var role = jwt.getClaimAsString("role");
-            return role == null ? List.of() : List.of(new SimpleGrantedAuthority("ROLE_" + role));
+            if (role != null) {
+                return List.of(new SimpleGrantedAuthority("ROLE_" + role));
+            }
+            var realmAccess = jwt.getClaimAsMap("realm_access");
+            if (realmAccess != null && realmAccess.get("roles") instanceof List<?> raw) {
+                var authorities = new ArrayList<org.springframework.security.core.GrantedAuthority>();
+                for (Object r : raw) {
+                    if (r instanceof String s
+                            && (s.equals("READONLY") || s.equals("DOC") || s.equals("ADMIN"))) {
+                        authorities.add(new SimpleGrantedAuthority("ROLE_" + s));
+                    }
+                }
+                if (!authorities.isEmpty()) {
+                    return authorities;
+                }
+            }
+            return List.of();
         });
         return converter;
     }

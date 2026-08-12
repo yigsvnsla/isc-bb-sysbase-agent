@@ -157,6 +157,25 @@ services:
         reservations:
           memory: 128M
 
+  keycloak:
+    build:
+      context: keycloak
+    container_name: sp-keycloak
+    ports:
+      - "8081:8080"
+    environment:
+      - KEYCLOAK_ADMIN=admin
+      - KEYCLOAK_ADMIN_PASSWORD=admin123
+    restart: unless-stopped
+    profiles:
+      - keycloak
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 512M
+
 volumes:
   postgres-data-sp-docs-pg:
   open-webui-data:

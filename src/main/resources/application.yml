@@ -92,6 +92,8 @@ app:
             secret: ${JWT_SECRET:dev-only-secret-cambiar-en-produccion-32bytes}
             previous-secret: ${JWT_PREVIOUS_SECRET:}
             ttl-minutes: ${JWT_TTL_MINUTES:60}
+        oidc:
+            issuer-uri: ${OIDC_ISSUER_URI:}
         cors-origins: ${CORS_ORIGINS:http://localhost:3000}
         rate-limit:
             enabled: true
