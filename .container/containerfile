@@ -1,0 +1,20 @@
+# Build stage
+FROM eclipse-temurin:26-jdk AS build
+WORKDIR /app
+COPY . .
+RUN ./mvnw -B -ntp -DskipTests package
+
+# Runtime stage — sandbox: non-root, sin shell
+FROM eclipse-temurin:26-jre
+RUN useradd -r -u 10001 agent && mkdir -p /app /app/config && chown -R agent:agent /app
+USER agent
+WORKDIR /app
+COPY --from=build /app/target/*.jar app.jar
+
+# TODO(futuro): rootfs read-only (--read-only) + tmpfs en /tmp al ejecutar.
+# TODO(futuro): pasar .env/secretos via mount en /app/config (no copiar en la imagen).
+# TODO(futuro): escaneo trivy de la imagen en CI.
+# TODO(futuro): healthcheck HTTP contra /actuator/health.
+
+EXPOSE 8080
+ENTRYPOINT ["java", "-jar", "app.jar"]

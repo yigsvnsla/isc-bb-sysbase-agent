@@ -36,7 +36,7 @@ sysbase_agent/
 | REST v1 | `POST /api/v1/agent/chat` |
 | REST v2 | `POST /api/v2/agent/chat` |
 | OpenAI compat | `GET /api/models`, `POST /api/chat/completions` (SSE) |
-| CLI | `ask`, `chat`, `kb-index`, `kb-status`, `doc-generate`, `doc-publish`, `doc-index`, `doc-status` |
+| CLI | `ask`, `chat`, `kb-index`, `kb-status`, `doc-generate`, `doc-publish`, `doc-index`, `doc-status`, `token-create`, `apikey-create/list/revoke`, `audit-tail`, `audit-search` |
 
 ## ChatClient beans
 
@@ -57,6 +57,16 @@ prompt → [cache? router:dec:{sha256} TTL 1h] → heurística:
   gray[0.35-0.55]? → LlmClassifier(maxTokens=8,timeout1.5s)→"CHEAP"/"EXPENSIVE"
 metrics: ai_router_decisions_total{tier}, ai_chat_duration_seconds{tier}
 ```
+
+## Seguridad y auditoría
+
+- **Auth REST**: JWT HS256 autogenerado (`app.security.jwt.secret` / env `JWT_SECRET`) + API keys (`X-API-Key`, tabla `api_keys`, hash SHA-256, rol, expiración).
+- **Roles**: `READONLY` (tools PG lectura + KB), `DOC` (+ `index_procedure`/docs), `ADMIN` (todo). CLI local sin auth (confianza).
+- **CLI**: `token-create --role X [--ttl-min N]`, `apikey-create --name X --role Y [--expire-days N]`, `apikey-list`, `apikey-revoke --id N`.
+- **Auditoría** (tabla `ai_audit`, eventos TURN/TOOL/AUTH): hash+truncado(500) del prompt, hash de respuesta, args completos de tools, decisión del router, latencia, usuario, canal, trace_id por turno.
+- **CLI auditoría**: `audit-tail [--limit N]`, `audit-search [--tool X] [--user Y] [--type TURN|TOOL|AUTH] [--limit N]`.
+- **Métricas**: `ai_tool_calls_total{tool,ok}`, `ai_auth_events_total{method,result}`, `ai_audit_write_failures_total`, más las del router.
+- **CORS**: allowlist configurable (`app.security.cors-origins` / env `CORS_ORIGINS`, default `http://localhost:3000`).
 
 ## Ingesta (startup automática)
 
@@ -93,7 +103,7 @@ Búsqueda: `similaritySearch(topK=12,threshold=0.25)` → <5 hits → fallback I
 |---|---|
 | **Conectividad** | Solo PostgreSQL local (pg_catalog). Sin drivers Sybase/MSSQL/Oracle reales |
 | **Operaciones** | Solo lectura. No ejecuta DDL/DML, no migra datos reales |
-| **Seguridad** | Sin auth, single-tenant |
+| **Seguridad** | Auth JWT HMAC autogenerado (sin IdP externo) + API keys; RBAC de tools por rol (READONLY/DOC/ADMIN); CORS allowlist configurable |
 | **Formatos** | Solo texto. Sin imágenes/audio. Sin file upload en chat |
 | **Streaming** | Solo OpenAI compat endpoint. V1/V2 son JSON in/out sincrono |
 | **Entrenamiento** | Sin fine-tuning. Modelo+embeddings fijos en runtime |
