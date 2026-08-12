@@ -118,7 +118,7 @@ class RedTeamSecurityTest {
         var audit = mock(AuditRepository.class);
         var decorated = new AuditedToolCallback(fake, new ToolAccessGuard(), audit, MAPPER, mock(MeterRegistry.class));
         decorated.call("{\"pattern\":\"%\"}");
-        verify(audit).recordTool(isNull(), isNull(), eq("search_procedures"), anyString(), eq(true), anyInt(), isNull());
+        verify(audit).recordTool(isNull(), isNull(), isNull(), eq("search_procedures"), anyString(), eq(true), anyInt(), isNull());
     }
 
     @Test

@@ -31,10 +31,18 @@ public class AuditRepository {
                 promptHash, promptTruncated, responseHash, latencyMs, null, null, null, null, null, error);
     }
 
-    public void recordTool(String traceId, String userId, String toolName, String toolArgs,
+    public void recordTool(String sessionId, String traceId, String userId, String toolName, String toolArgs,
                            boolean ok, Integer latencyMs, String error) {
-        record("TOOL", traceId, null, userId, null, null, null, null, null,
+        record("TOOL", traceId, sessionId, userId, null, null, null, null, null,
                 null, null, null, latencyMs, toolName, toolArgs, ok, null, null, error);
+    }
+
+    public int deleteBySessionId(String sessionId) {
+        return jdbc.update("DELETE FROM ai_audit WHERE session_id = ?", sessionId);
+    }
+
+    public int purgeBefore(java.time.Instant cutoff) {
+        return jdbc.update("DELETE FROM ai_audit WHERE event_ts < ?", java.sql.Timestamp.from(cutoff));
     }
 
     public void recordAuth(String method, String principal, boolean ok) {

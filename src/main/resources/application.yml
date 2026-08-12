@@ -109,6 +109,9 @@ app:
         docusaurus:
             path: ${DOCS_DOCUSAURUS_PATH:.container/docs}
             site-path: ${DOCS_DOCUSAURUS_SITE_PATH:.container/docusaurus}
+    audit:
+        retention-days: 90
+        purge-cron: "0 0 3 * * *"
 
 logging:
     level:
@@ -120,3 +123,8 @@ server:
     port: ${PORT:8080}
     servlet:
         context-path: /api
+
+management:
+    otlp:
+        tracing:
+            endpoint: ${OTEL_EXPORTER_ENDPOINT:}

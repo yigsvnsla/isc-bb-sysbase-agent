@@ -62,6 +62,7 @@ public class AgentService {
             var attrs = RequestContextHolder.getRequestAttributes();
             if (attrs != null) {
                 attrs.setAttribute("sysbase-trace", traceId, RequestAttributes.SCOPE_REQUEST);
+                attrs.setAttribute("sysbase-session", conversationId, RequestAttributes.SCOPE_REQUEST);
             }
         } catch (Exception ignored) {
         }
@@ -100,6 +101,15 @@ public class AgentService {
         log.debug("→ stream(sync-fallback): conv={}, msg={}", conversationId, message);
         return Mono.fromCallable(() -> chat(conversationId, message))
                 .flatMapMany(Mono::just);
+    }
+
+    public void deleteConversation(String conversationId) {
+        try {
+            chatMemory.clear(conversationId);
+            audit.deleteBySessionId(conversationId);
+        } catch (Exception e) {
+            log.warn("Error borrando conversación {}: {}", conversationId, e.getMessage());
+        }
     }
 
     private RouterDecision decide(String conversationId, String message) {

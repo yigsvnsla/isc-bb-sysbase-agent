@@ -72,7 +72,7 @@ public class AuditedToolCallback implements ToolCallback {
     private void recordTool(String name, String toolInput, boolean ok, long startNanos, String error) {
         try {
             var latencyMs = (int) ((System.nanoTime() - startNanos) / 1_000_000);
-            audit.recordTool(currentTrace(), currentUser(), name, toolInput, ok, latencyMs, error);
+            audit.recordTool(currentSession(), currentTrace(), currentUser(), name, toolInput, ok, latencyMs, error);
             meters.counter("ai_tool_calls_total", "tool", name, "ok", String.valueOf(ok)).increment();
         } catch (Exception ignored) {
         }
@@ -113,6 +113,17 @@ public class AuditedToolCallback implements ToolCallback {
             var attrs = RequestContextHolder.getRequestAttributes();
             if (attrs != null) {
                 return (String) attrs.getAttribute("sysbase-trace", RequestAttributes.SCOPE_REQUEST);
+            }
+        } catch (Exception ignored) {
+        }
+        return null;
+    }
+
+    private String currentSession() {
+        try {
+            var attrs = RequestContextHolder.getRequestAttributes();
+            if (attrs != null) {
+                return (String) attrs.getAttribute("sysbase-session", RequestAttributes.SCOPE_REQUEST);
             }
         } catch (Exception ignored) {
         }
