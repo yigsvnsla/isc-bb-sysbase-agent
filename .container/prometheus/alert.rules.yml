@@ -1,0 +1,86 @@
+groups:
+  - name: sysbase-agent-critical
+    rules:
+      - alert: AuditWriteFailures
+        expr: increase(ai_audit_write_failures_total[5m]) > 0
+        for: 5m
+        labels:
+          severity: critical
+          runbook_url: docs/governance/runbook.md#p1-auditoria
+        annotations:
+          summary: "Pérdida de auditoría: ai_audit_write_failures_total > 0"
+          description: "El INSERT de ai_audit falla desde hace 5m. Evidencia forense incompleta. Revisar audit-tail --limit 50 y logs del repositorio."
+
+      - alert: PossibleExfiltration
+        expr: sum(increase(ai_tool_calls_total{tool="get_procedure_source"}[5m])) > 100
+        for: 0m
+        labels:
+          severity: critical
+          runbook_url: docs/governance/incident-response.md
+        annotations:
+          summary: "Posible exfiltración: ráfaga de get_procedure_source"
+          description: "Más de 100 lecturas de código fuente de SP en 5m. Revocar API keys sospechosas (apikey-revoke --id N)."
+
+      - alert: AuthFailureBurst
+        expr: sum(rate(ai_auth_events_total{result="failure"}[5m])) > 50
+        for: 0m
+        labels:
+          severity: critical
+          runbook_url: docs/governance/incident-response.md
+        annotations:
+          summary: "Fallos de autenticación anómalos"
+          description: "Tasa de fallos de auth > 50/s en 5m. Posible fuerza bruta. Revisar ai_audit AUTH events."
+
+  - name: sysbase-agent-operational
+    rules:
+      - alert: ChatLatencyHigh
+        expr: histogram_quantile(0.95, sum(rate(ai_chat_duration_seconds_bucket[10m])) by (le, tier)) > 15
+        for: 5m
+        labels:
+          severity: warning
+          runbook_url: docs/governance/runbook.md
+        annotations:
+          summary: "Latencia p95 del chat > 15s"
+          description: "El p95 de ai_chat_duration_seconds supera 15s. Revisar dashboards y Tempo para traces lentos."
+
+      - alert: ToolErrorsHigh
+        expr: sum(rate(ai_tool_calls_total{ok="false"}[10m])) > 10
+        for: 5m
+        labels:
+          severity: warning
+          runbook_url: docs/governance/runbook.md
+        annotations:
+          summary: "Errores de herramientas en aumento"
+          description: "Más de 10 llamadas fallidas de tools en 10m. Revisar ai_audit TOOL events y PostgresTools."
+
+      - alert: RouterCacheDegraded
+        expr: sum(rate(ai_router_cache_total{result="hit"}[10m])) / sum(rate(ai_router_cache_total[10m])) < 0.5
+        for: 10m
+        labels:
+          severity: warning
+          runbook_url: docs/governance/runbook.md
+        annotations:
+          summary: "Cache del router degradado"
+          description: "Hit rate de router:dec < 50%. Revisar Redis y patrones de prompts repetidos."
+
+  - name: sysbase-agent-cost
+    rules:
+      - alert: ChatVolumeHigh
+        expr: sum(increase(ai_chat_duration_seconds_count[1h])) > 500
+        for: 10m
+        labels:
+          severity: info
+          runbook_url: docs/governance/runbook.md
+        annotations:
+          summary: "Volumen de chat alto (>500 llamadas/h)"
+          description: "Proxy de costo: más de 500 llamadas al modelo en la última hora."
+
+      - alert: RouterExpensiveShare
+        expr: sum(ai_router_decisions_total{tier="expensive"}) / sum(ai_router_decisions_total) > 0.7
+        for: 15m
+        labels:
+          severity: info
+          runbook_url: docs/governance/runbook.md
+        annotations:
+          summary: "Uso del modelo caro elevado (>70%)"
+          description: "La proporción de decisiones EXPENSIVE supera el 70%. Revisar prompts y threshold del router."

@@ -1,0 +1,36 @@
+global:
+  resolve_timeout: 5m
+
+route:
+  receiver: "default"
+  group_by: ["alertname", "severity"]
+  group_wait: 10s
+  group_interval: 5m
+  repeat_interval: 4h
+  routes:
+    - matchers:
+        - severity = "critical"
+      receiver: "critical"
+      continue: false
+    - matchers:
+        - severity = "warning"
+      receiver: "warning"
+      continue: false
+    - matchers:
+        - severity = "info"
+      receiver: "info"
+      continue: false
+
+receivers:
+  - name: "default"
+    webhook_configs:
+      - url: "http://localhost:5000/hooks/alertmanager"
+  - name: "critical"
+    webhook_configs:
+      - url: "http://localhost:5000/hooks/alertmanager"
+  - name: "warning"
+    webhook_configs:
+      - url: "http://localhost:5000/hooks/alertmanager"
+  - name: "info"
+    webhook_configs:
+      - url: "http://localhost:5000/hooks/alertmanager"

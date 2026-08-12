@@ -4,6 +4,13 @@
 - Inicio: `podman compose -f .container/compose.yml up -d postgres redis` luego `./mvnw spring-boot:run`.
 - Consumo API: `token-create` / `apikey-create` (CLI), header `Authorization: Bearer` o `X-API-Key`.
 - Auditoría: `audit-tail`, `audit-search` (CLI).
+- Observabilidad (profile otel): `podman compose -f .container/compose.yml --profile otel up -d` — Tempo :4318, Grafana :3002, Prometheus :9090, Alertmanager :9093.
+
+## Alertas (P1/P2/P3)
+- Reglas: `.container/prometheus/alert.rules.yml` (severity critical/warning/info → rutas Alertmanager).
+- UI: Alertmanager `http://localhost:9093`, reglas `http://localhost:9090/api/v1/rules`.
+- Receivers: webhook placeholder en `.container/alertmanager/alertmanager.yml` (URL por entorno, p.ej. Slack Opsgenie) — ver `docs/audit/alert-rules.md` para el runbook de cada alerta.
+- Nota de diseño: alertas sobre counters acumulados deben usar `increase(…[5m])`/`rate(…)`, nunca el counter crudo `> 0` (nunca se resuelven).
 
 ## Backup y restauración
 | Componente | Método | Frecuencia |

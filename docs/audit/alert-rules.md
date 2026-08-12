@@ -1,6 +1,6 @@
 # Reglas de Alerta — sysbase-agent
 
-Métricas expuestas por Micrometer (actuator/prometheus). Referencia para Prometheus + Alertmanager.
+Métricas expuestas por Micrometer (actuator/prometheus). Implementadas en `.container/prometheus/alert.rules.yml` (Prometheus + Alertmanager, profile `otel`). UI: Alertmanager `:9093`, reglas `:9090/api/v1/rules`.
 
 ## Alertas críticas (P1)
 | Regla | Expresión PromQL | Condición |
