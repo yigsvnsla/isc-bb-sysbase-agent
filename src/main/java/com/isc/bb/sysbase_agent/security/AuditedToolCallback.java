@@ -12,6 +12,7 @@ import org.springframework.web.context.request.RequestContextHolder;
 import com.isc.bb.sysbase_agent.audit.AuditRepository;
 
 import io.micrometer.core.instrument.MeterRegistry;
+import io.opentelemetry.api.trace.Tracer;
 import tools.jackson.databind.ObjectMapper;
 
 public class AuditedToolCallback implements ToolCallback {
@@ -21,14 +22,16 @@ public class AuditedToolCallback implements ToolCallback {
     private final AuditRepository audit;
     private final ObjectMapper objectMapper;
     private final MeterRegistry meters;
+    private final Tracer tracer;
 
     public AuditedToolCallback(ToolCallback delegate, ToolAccessGuard guard, AuditRepository audit,
-                               ObjectMapper objectMapper, MeterRegistry meters) {
+                               ObjectMapper objectMapper, MeterRegistry meters, Tracer tracer) {
         this.delegate = delegate;
         this.guard = guard;
         this.audit = audit;
         this.objectMapper = objectMapper;
         this.meters = meters;
+        this.tracer = tracer;
     }
 
     @Override
@@ -58,14 +61,20 @@ public class AuditedToolCallback implements ToolCallback {
             throw new SecurityException("Tool '" + name + "' no permitida para rol: " + role);
         }
         var startNanos = System.nanoTime();
-        try {
+        var span = tracer.spanBuilder("agent.tool." + name).startSpan();
+        span.setAttribute("tool", name);
+        span.setAttribute("role", String.valueOf(role));
+        try (var scope = span.makeCurrent()) {
             var raw = toolContext != null ? delegate.call(toolInput, toolContext) : delegate.call(toolInput);
             var wrapped = wrapRetrievedData(raw);
             recordTool(name, toolInput, true, startNanos, null);
             return wrapped;
         } catch (Throwable t) {
+            span.recordException(t);
             recordTool(name, toolInput, false, startNanos, t.getMessage());
             throw t;
+        } finally {
+            span.end();
         }
     }
 

@@ -1,3 +1,8 @@
 spring:
     main:
         web-application-type: none
+
+management:
+    tracing:
+        sampling:
+            probability: 0.1

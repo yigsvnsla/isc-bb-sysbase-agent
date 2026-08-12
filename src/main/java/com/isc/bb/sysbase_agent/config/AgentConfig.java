@@ -21,6 +21,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.util.StreamUtils;
 
 import io.micrometer.core.instrument.MeterRegistry;
+import io.opentelemetry.api.trace.Tracer;
 
 import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.ObjectMapper;
@@ -74,9 +75,10 @@ public class AgentConfig {
                                       ToolAccessGuard guard,
                                       AuditRepository audit,
                                       ObjectMapper objectMapper,
-                                      MeterRegistry meters) {
+                                      MeterRegistry meters,
+                                      Tracer tracer) {
         return Arrays.stream(ToolCallbacks.from(postgresTools, knowledgeBaseTool))
-                .map(tc -> new AuditedToolCallback(tc, guard, audit, objectMapper, meters))
+                .map(tc -> new AuditedToolCallback(tc, guard, audit, objectMapper, meters, tracer))
                 .toArray(ToolCallback[]::new);
     }
 

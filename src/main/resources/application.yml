@@ -125,6 +125,10 @@ server:
         context-path: /api
 
 management:
+    tracing:
+        sampling:
+            probability: 1.0
+        # TODO(futuro): sampling 0.1 en producción (ver application-prod.yml).
     otlp:
         tracing:
             endpoint: ${OTEL_EXPORTER_ENDPOINT:}

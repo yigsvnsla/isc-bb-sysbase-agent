@@ -9,6 +9,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -24,6 +25,9 @@ import com.isc.bb.sysbase_agent.router.ModelRouter;
 import com.isc.bb.sysbase_agent.tools.KnowledgeBaseTool;
 
 import io.micrometer.core.instrument.MeterRegistry;
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.SpanBuilder;
+import io.opentelemetry.api.trace.Tracer;
 import tools.jackson.databind.ObjectMapper;
 
 /**
@@ -35,6 +39,14 @@ import tools.jackson.databind.ObjectMapper;
 class RedTeamSecurityTest {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
+
+    private static Tracer mockTracer() {
+        var tracer = mock(Tracer.class);
+        var builder = mock(SpanBuilder.class);
+        when(tracer.spanBuilder(anyString())).thenReturn(builder);
+        when(builder.startSpan()).thenReturn(mock(Span.class));
+        return tracer;
+    }
 
     private static final class FakeTool implements ToolCallback {
         private final String name;
@@ -82,7 +94,7 @@ class RedTeamSecurityTest {
         } else {
             org.springframework.security.core.context.SecurityContextHolder.clearContext();
         }
-        return new AuditedToolCallback(fake, guard, mock(AuditRepository.class), MAPPER, mock(MeterRegistry.class));
+        return new AuditedToolCallback(fake, guard, mock(AuditRepository.class), MAPPER, mock(MeterRegistry.class), mockTracer());
     }
 
     @Test
@@ -116,7 +128,7 @@ class RedTeamSecurityTest {
         org.springframework.security.core.context.SecurityContextHolder.clearContext();
         var fake = new FakeTool("search_procedures", "ok");
         var audit = mock(AuditRepository.class);
-        var decorated = new AuditedToolCallback(fake, new ToolAccessGuard(), audit, MAPPER, mock(MeterRegistry.class));
+        var decorated = new AuditedToolCallback(fake, new ToolAccessGuard(), audit, MAPPER, mock(MeterRegistry.class), mockTracer());
         decorated.call("{\"pattern\":\"%\"}");
         verify(audit).recordTool(isNull(), isNull(), isNull(), eq("search_procedures"), anyString(), eq(true), anyInt(), isNull());
     }

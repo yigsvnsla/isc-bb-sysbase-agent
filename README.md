@@ -68,6 +68,20 @@ metrics: ai_router_decisions_total{tier}, ai_chat_duration_seconds{tier}
 - **Métricas**: `ai_tool_calls_total{tool,ok}`, `ai_auth_events_total{method,result}`, `ai_audit_write_failures_total`, más las del router.
 - **CORS**: allowlist configurable (`app.security.cors-origins` / env `CORS_ORIGINS`, default `http://localhost:3000`).
 
+## Observabilidad (tracing con OpenTelemetry)
+
+- **Stack**: Tempo (backend de traces) + Grafana (UI) en el profile `otel` del compose.
+- **Activar**:
+  ```bash
+  podman compose -f .container/compose.yml --profile otel up -d tempo grafana
+  OTEL_EXPORTER_ENDPOINT=http://localhost:4318 ./mvnw spring-boot:run
+  ```
+- **UI**: Grafana http://localhost:3002 → Explore → datasource Tempo (provisionada automáticamente).
+- **API Tempo**: `curl 'localhost:3200/api/search?limit=10'`.
+- **Sampling**: 1.0 en desarrollo (configurable `management.tracing.sampling.probability`), 0.1 en profile prod.
+- **Sin endpoint configurado** (`OTEL_EXPORTER_ENDPOINT` vacío) el export está desactivado y no hay overhead.
+- **Alertas**: reglas de monitoreo en docs/audit/alert-rules.md.
+
 ## Ingesta (startup automática)
 
 PDFs→PdfDocumentReader | SQLs→SqlFileReader | TXTs→SqlFileReader | MDs→MarkdownReader | doc MDs→MarkdownReader

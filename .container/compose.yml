@@ -77,6 +77,51 @@ services:
         reservations:
           memory: 512M
 
+  tempo:
+    build:
+      context: tempo
+    container_name: sp-tempo
+    command: ["-config.file=/etc/tempo.yaml"]
+    ports:
+      - "4318:4318"
+      - "3200:3200"
+    volumes:
+      - tempo-data:/var/tempo
+    restart: unless-stopped
+    profiles:
+      - otel
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+
+  grafana:
+    image: grafana/grafana:11.1.0
+    container_name: sp-grafana
+    ports:
+      - "3002:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana-provisioning:/etc/grafana/provisioning:ro
+    environment:
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer
+    restart: unless-stopped
+    profiles:
+      - otel
+    depends_on:
+      - tempo
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+
 volumes:
   postgres-data-sp-docs-pg:
   open-webui-data:
+  tempo-data:
+  grafana-data:

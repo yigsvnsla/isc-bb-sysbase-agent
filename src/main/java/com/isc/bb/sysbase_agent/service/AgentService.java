@@ -18,6 +18,8 @@ import com.isc.bb.sysbase_agent.util.MarkdownFixer;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.Tracer;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -38,6 +40,7 @@ public class AgentService {
     private final MeterRegistry meterRegistry;
     private final AuditRepository audit;
     private final TokenBudgetService budget;
+    private final Tracer tracer;
 
     public AgentService(@Qualifier("chatClientCheap") ChatClient cheapClient,
                         @Qualifier("chatClientExpensive") ChatClient expensiveClient,
@@ -45,7 +48,8 @@ public class AgentService {
                         ChatMemory chatMemory,
                         MeterRegistry meterRegistry,
                         AuditRepository audit,
-                        TokenBudgetService budget) {
+                        TokenBudgetService budget,
+                        @Qualifier("otelTracer") Tracer tracer) {
         this.cheapClient = cheapClient;
         this.expensiveClient = expensiveClient;
         this.router = router;
@@ -53,6 +57,7 @@ public class AgentService {
         this.meterRegistry = meterRegistry;
         this.audit = audit;
         this.budget = budget;
+        this.tracer = tracer;
     }
 
     public String chat(String conversationId, String message) {
@@ -75,24 +80,31 @@ public class AgentService {
         }
         var decision = decide(conversationId, message);
         var client = decision.tier() == Tier.EXPENSIVE ? expensiveClient : cheapClient;
+        var span = tracer.spanBuilder("agent.chat").startSpan();
+        span.setAttribute("conv", conversationId);
+        span.setAttribute("tier", decision.tier().name());
+        span.setAttribute("router.reason", String.valueOf(decision.reason()));
         var sample = Timer.start(meterRegistry);
         var startNanos = System.nanoTime();
-        try {
+        try (var scope = span.makeCurrent()) {
             var response = client.prompt()
                     .user(message)
                     .advisors(a -> a.param("chat_memory_conversation_id", conversationId))
                     .call()
                     .content();
             log.debug("← respuesta: conv={}, chars={}", conversationId, response.length());
+            span.setAttribute("response.chars", response.length());
             var fixed = MarkdownFixer.fix(response);
             budget.recordChars(budgetUser, response.length());
             recordTurn(decision, conversationId, traceId, message, fixed, startNanos, null);
             return fixed;
         } catch (Exception e) {
             log.error("Error en chat: conv={} tier={}", conversationId, decision.tier(), e);
+            span.recordException(e);
             recordTurn(decision, conversationId, traceId, message, null, startNanos, e.getMessage());
             return "Lo siento, ocurrió un error al procesar tu consulta: " + e.getMessage();
         } finally {
+            span.end();
             recordOutcome(decision, sample);
         }
     }
