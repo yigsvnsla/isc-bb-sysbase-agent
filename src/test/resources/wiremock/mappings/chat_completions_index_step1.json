@@ -1,0 +1,49 @@
+{
+  "priority": 1,
+  "request": {
+    "method": "POST",
+    "urlPath": "/chat/completions",
+    "bodyPatterns": [
+      {
+        "contains": "indexa el"
+      }
+    ]
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "jsonBody": {
+      "id": "chatcmpl-index-001",
+      "object": "chat.completion",
+      "created": 1750000000,
+      "model": "deepseek-v4-flash",
+      "choices": [
+        {
+          "index": 0,
+          "message": {
+            "role": "assistant",
+            "content": null,
+            "tool_calls": [
+              {
+                "id": "call_index_1",
+                "type": "function",
+                "function": {
+                  "name": "index_procedure",
+                  "arguments": "{\"name\":\"xyz\",\"source\":\"CREATE PROCEDURE xyz AS SELECT 1\",\"schema\":\"public\"}"
+                }
+              }
+            ]
+          },
+          "finish_reason": "tool_calls"
+        }
+      ],
+      "usage": {
+        "prompt_tokens": 40,
+        "completion_tokens": 20,
+        "total_tokens": 60
+      }
+    }
+  }
+}

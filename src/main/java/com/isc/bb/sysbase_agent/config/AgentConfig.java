@@ -27,6 +27,7 @@ import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
 import com.isc.bb.sysbase_agent.audit.AuditRepository;
+import com.isc.bb.sysbase_agent.loader.SpDocLoader;
 import com.isc.bb.sysbase_agent.memory.RedisChatMemoryRepository;
 import com.isc.bb.sysbase_agent.security.AuditedToolCallback;
 import com.isc.bb.sysbase_agent.security.ToolAccessGuard;
@@ -72,12 +73,13 @@ public class AgentConfig {
     @Bean
     ToolCallback[] agentToolCallbacks(PostgresTools postgresTools,
                                       KnowledgeBaseTool knowledgeBaseTool,
+                                      SpDocLoader spDocLoader,
                                       ToolAccessGuard guard,
                                       AuditRepository audit,
                                       ObjectMapper objectMapper,
                                       MeterRegistry meters,
                                       Tracer tracer) {
-        return Arrays.stream(ToolCallbacks.from(postgresTools, knowledgeBaseTool))
+        return Arrays.stream(ToolCallbacks.from(postgresTools, knowledgeBaseTool, spDocLoader))
                 .map(tc -> new AuditedToolCallback(tc, guard, audit, objectMapper, meters, tracer))
                 .toArray(ToolCallback[]::new);
     }

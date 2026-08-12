@@ -54,14 +54,18 @@ public class SpDocLoader implements CommandLineRunner {
     }
 
     @Tool(name = "index_procedure", description = "Indexa un SP en el vector store para búsqueda semántica")
-    public void indexProcedure(String name, String source, String schema) {
+    public String indexProcedure(String name, String source, String schema) {
         var doc = new Document(source, Map.of(
                 "name", name,
                 "schema", schema != null ? schema : "public",
                 "type", "stored_procedure"));
         vectorStore.add(List.of(doc));
         log.info("SP indexado: {}.{}", schema != null ? schema : "public", name);
+        return "SP indexado correctamente: " + (schema != null ? schema : "public") + "." + name;
     }
+
+    // TODO(futuro): HITL con cola de aprobación (REST 202 + endpoint de aprobar) para escrituras
+    // desde HTTP. Hoy la barrera humana es el rol autenticado (DOC/ADMIN vía ToolAccessGuard).
 
     private List<Document> parseFile(Path file) throws IOException {
         var content = Files.readString(file);

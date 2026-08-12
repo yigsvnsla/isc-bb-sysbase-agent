@@ -1,0 +1,39 @@
+{
+  "priority": 0,
+  "request": {
+    "method": "POST",
+    "urlPath": "/chat/completions",
+    "bodyPatterns": [
+      {
+        "contains": "SP indexado correctamente"
+      }
+    ]
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "jsonBody": {
+      "id": "chatcmpl-index-002",
+      "object": "chat.completion",
+      "created": 1750000000,
+      "model": "deepseek-v4-flash",
+      "choices": [
+        {
+          "index": 0,
+          "message": {
+            "role": "assistant",
+            "content": "El SP public.xyz fue indexado correctamente en la base de conocimiento."
+          },
+          "finish_reason": "stop"
+        }
+      ],
+      "usage": {
+        "prompt_tokens": 60,
+        "completion_tokens": 15,
+        "total_tokens": 75
+      }
+    }
+  }
+}
