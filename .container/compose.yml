@@ -113,6 +113,24 @@ services:
       - otel
     depends_on:
       - tempo
+      - prometheus
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+
+  prometheus:
+    build:
+      context: prometheus
+    container_name: sp-prometheus
+    ports:
+      - "9090:9090"
+    network_mode: host
+    restart: unless-stopped
+    profiles:
+      - otel
     deploy:
       resources:
         limits:
