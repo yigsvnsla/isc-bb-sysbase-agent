@@ -39,7 +39,11 @@ class EvalHarnessTest {
             DockerImageName.parse("redis:7-alpine"))
             .withExposedPorts(6379);
 
-    static {
+    @org.junit.jupiter.api.BeforeAll
+    static void startContainers() {
+        org.junit.jupiter.api.Assumptions.assumeTrue(
+                System.getenv("IA_API_KEY") != null && !System.getenv("IA_API_KEY").isBlank(),
+                "IA_API_KEY no disponible como variable de entorno real — eval harness omitido");
         postgres.start();
         redis.start();
     }
