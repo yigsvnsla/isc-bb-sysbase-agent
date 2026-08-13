@@ -20,6 +20,11 @@ public class ToolAccessGuard {
 
     private static final Set<String> DOC_TOOLS = Set.of("index_procedure");
 
+    /** Tools de escritura: requieren aprobación humana (HITL) en contexto HTTP. */
+    public boolean isWriteTool(String toolName) {
+        return DOC_TOOLS.contains(toolName);
+    }
+
     /**
      * role == null → contexto local (CLI/Shell) = confianza total.
      */

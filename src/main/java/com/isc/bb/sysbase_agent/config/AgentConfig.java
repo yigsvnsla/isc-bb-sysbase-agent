@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.Map;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
@@ -26,6 +27,7 @@ import io.opentelemetry.api.trace.Tracer;
 import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
+import com.isc.bb.sysbase_agent.approval.ApprovalService;
 import com.isc.bb.sysbase_agent.audit.AuditRepository;
 import com.isc.bb.sysbase_agent.loader.SpDocLoader;
 import com.isc.bb.sysbase_agent.memory.RedisChatMemoryRepository;
@@ -77,12 +79,28 @@ public class AgentConfig {
                                       SpDocLoader spDocLoader,
                                       ToolAccessGuard guard,
                                       AuditRepository audit,
+                                      ApprovalService approvals,
                                       ObjectMapper objectMapper,
                                       MeterRegistry meters,
                                       Tracer tracer) {
         return Arrays.stream(ToolCallbacks.from(postgresTools, knowledgeBaseTool, spDocLoader))
-                .map(tc -> new AuditedToolCallback(tc, guard, audit, objectMapper, meters, tracer))
+                .map(tc -> new AuditedToolCallback(tc, guard, audit, approvals, objectMapper, meters, tracer))
                 .toArray(ToolCallback[]::new);
+    }
+
+    /**
+     * Delegates reales de las tools de escritura (sin wrapper HITL) para que
+     * ApprovalService las ejecute cuando un ADMIN aprueba una solicitud.
+     */
+    @Bean
+    Map<String, ToolCallback> writeToolCallbacks(PostgresTools postgresTools,
+                                                 KnowledgeBaseTool knowledgeBaseTool,
+                                                 SpDocLoader spDocLoader,
+                                                 ToolAccessGuard guard) {
+        return Arrays.stream(ToolCallbacks.from(postgresTools, knowledgeBaseTool, spDocLoader))
+                .filter(tc -> guard.isWriteTool(tc.getToolDefinition().name()))
+                .collect(java.util.stream.Collectors.toMap(
+                        tc -> tc.getToolDefinition().name(), tc -> tc));
     }
 
     @Bean(name = "chatClientCheap")

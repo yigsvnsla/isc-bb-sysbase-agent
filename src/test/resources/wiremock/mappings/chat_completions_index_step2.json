@@ -5,7 +5,7 @@
     "urlPath": "/chat/completions",
     "bodyPatterns": [
       {
-        "contains": "SP indexado correctamente"
+        "contains": "en espera de aprobación"
       }
     ]
   },
@@ -24,7 +24,7 @@
           "index": 0,
           "message": {
             "role": "assistant",
-            "content": "El SP public.xyz fue indexado correctamente en la base de conocimiento."
+            "content": "La indexación del SP public.xyz quedó en espera de aprobación humana. El administrador debe aprobarla."
           },
           "finish_reason": "stop"
         }

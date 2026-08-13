@@ -9,6 +9,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
 
+import com.isc.bb.sysbase_agent.approval.ApprovalService;
 import com.isc.bb.sysbase_agent.audit.AuditRepository;
 
 import io.micrometer.core.instrument.MeterRegistry;
@@ -20,15 +21,18 @@ public class AuditedToolCallback implements ToolCallback {
     private final ToolCallback delegate;
     private final ToolAccessGuard guard;
     private final AuditRepository audit;
+    private final ApprovalService approvals;
     private final ObjectMapper objectMapper;
     private final MeterRegistry meters;
     private final Tracer tracer;
 
     public AuditedToolCallback(ToolCallback delegate, ToolAccessGuard guard, AuditRepository audit,
+                               ApprovalService approvals,
                                ObjectMapper objectMapper, MeterRegistry meters, Tracer tracer) {
         this.delegate = delegate;
         this.guard = guard;
         this.audit = audit;
+        this.approvals = approvals;
         this.objectMapper = objectMapper;
         this.meters = meters;
         this.tracer = tracer;
@@ -59,6 +63,12 @@ public class AuditedToolCallback implements ToolCallback {
         var name = delegate.getToolDefinition().name();
         if (!guard.canInvoke(role, name)) {
             throw new SecurityException("Tool '" + name + "' no permitida para rol: " + role);
+        }
+        if (guard.isWriteTool(name) && role != null && approvals != null) {
+            var req = approvals.submit(name, toolInput, currentUser());
+            return wrapRetrievedData("⚠️ Solicitud #" + req.id() + " de " + name
+                    + " en espera de aprobación humana. NO se ejecutó. "
+                    + "El administrador la aprueba vía GET /v1/admin/approvals.");
         }
         var startNanos = System.nanoTime();
         var span = tracer.spanBuilder("agent.tool." + name).startSpan();

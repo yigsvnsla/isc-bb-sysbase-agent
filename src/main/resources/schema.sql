@@ -50,3 +50,18 @@ CREATE TABLE IF NOT EXISTS audit_worm_chunks (
 CREATE INDEX IF NOT EXISTS idx_ai_audit_ts ON ai_audit (event_ts DESC);
 CREATE INDEX IF NOT EXISTS idx_ai_audit_user ON ai_audit (user_id);
 CREATE INDEX IF NOT EXISTS idx_ai_audit_tool ON ai_audit (tool_name);
+
+CREATE TABLE IF NOT EXISTS approval_requests (
+    id BIGSERIAL PRIMARY KEY,
+    tool_name TEXT NOT NULL,
+    args JSONB NOT NULL,
+    requester TEXT,
+    status TEXT NOT NULL DEFAULT 'PENDING',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    decided_at TIMESTAMPTZ,
+    decided_by TEXT,
+    result TEXT,
+    result_ok BOOLEAN,
+    error TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_approval_status ON approval_requests (status, created_at);

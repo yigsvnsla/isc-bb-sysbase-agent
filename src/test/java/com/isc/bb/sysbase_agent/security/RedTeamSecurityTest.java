@@ -94,7 +94,7 @@ class RedTeamSecurityTest {
         } else {
             org.springframework.security.core.context.SecurityContextHolder.clearContext();
         }
-        return new AuditedToolCallback(fake, guard, mock(AuditRepository.class), MAPPER, mock(MeterRegistry.class), mockTracer());
+        return new AuditedToolCallback(fake, guard, mock(AuditRepository.class), mock(com.isc.bb.sysbase_agent.approval.ApprovalService.class), MAPPER, mock(MeterRegistry.class), mockTracer());
     }
 
     @Test
@@ -128,7 +128,7 @@ class RedTeamSecurityTest {
         org.springframework.security.core.context.SecurityContextHolder.clearContext();
         var fake = new FakeTool("search_procedures", "ok");
         var audit = mock(AuditRepository.class);
-        var decorated = new AuditedToolCallback(fake, new ToolAccessGuard(), audit, MAPPER, mock(MeterRegistry.class), mockTracer());
+        var decorated = new AuditedToolCallback(fake, new ToolAccessGuard(), audit, mock(com.isc.bb.sysbase_agent.approval.ApprovalService.class), MAPPER, mock(MeterRegistry.class), mockTracer());
         decorated.call("{\"pattern\":\"%\"}");
         verify(audit).recordTool(isNull(), isNull(), isNull(), eq("search_procedures"), anyString(), eq(true), anyInt(), isNull());
     }
