@@ -92,6 +92,56 @@ public class AuditRepository {
                 null, null, null, null, null, null, null, method, ok, null);
     }
 
+    // ── Particionado mensual de ai_audit ──
+
+    /** true si ai_audit está particionada por rango (PG nativo). */
+    public boolean isPartitioned() {
+        var rows = jdbc.queryForList(
+                "SELECT 1 FROM pg_partitioned_table WHERE partrelid = 'ai_audit'::regclass");
+        return !rows.isEmpty();
+    }
+
+    /** Crea (si falta) la partición mensual ai_audit_YYYY_MM. DDL — llamar solo si isPartitioned(). */
+    public void ensureMonthlyPartition(java.time.YearMonth month) {
+        var from = month.atDay(1);
+        var to = month.plusMonths(1).atDay(1);
+        jdbc.execute("CREATE TABLE IF NOT EXISTS ai_audit_" + monthSuffix(month)
+                + " PARTITION OF ai_audit FOR VALUES FROM ('" + from + "') TO ('" + to + "')");
+    }
+
+    /** Crea la partición default (recibe filas sin partición mensual, p.ej. eventos viejos). */
+    public void ensureDefaultPartition() {
+        jdbc.execute("CREATE TABLE IF NOT EXISTS ai_audit_default PARTITION OF ai_audit DEFAULT");
+    }
+
+    public List<String> partitionNames() {
+        return jdbc.query("""
+                        SELECT child.relname
+                        FROM pg_inherits i
+                        JOIN pg_class parent ON parent.oid = i.inhparent AND parent.relname = 'ai_audit'
+                        JOIN pg_class child ON child.oid = i.inhrelid
+                        WHERE child.relname <> 'ai_audit_default'
+                        ORDER BY child.relname
+                        """,
+                (rs, i) -> rs.getString(1));
+    }
+
+    /** true si quedan eventos sin exportar (WORM) anteriores al cutoff. */
+    public boolean hasUnexportedBefore(java.time.Instant cutoff) {
+        var rows = jdbc.queryForList(
+                "SELECT 1 FROM ai_audit WHERE worm_exported_at IS NULL AND event_ts < ? LIMIT 1",
+                java.sql.Timestamp.from(cutoff));
+        return !rows.isEmpty();
+    }
+
+    public void dropPartition(String partitionName) {
+        jdbc.execute("DROP TABLE IF EXISTS " + partitionName);
+    }
+
+    public static String monthSuffix(java.time.YearMonth month) {
+        return String.format("%04d_%02d", month.getYear(), month.getMonthValue());
+    }
+
     private void record(String eventType, String traceId, String sessionId, String userId, String channel,
                         String tier, BigDecimal routerScore, String routerReason, Boolean cacheHit,
                         String promptHash, String promptTruncated, String responseHash,

@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS api_keys (
 );
 
 CREATE TABLE IF NOT EXISTS ai_audit (
-    id BIGSERIAL PRIMARY KEY,
+    id BIGSERIAL,
     event_type TEXT NOT NULL,
     event_ts TIMESTAMPTZ NOT NULL DEFAULT now(),
     trace_id TEXT,
@@ -31,7 +31,11 @@ CREATE TABLE IF NOT EXISTS ai_audit (
     auth_ok BOOLEAN,
     error TEXT,
     worm_exported_at TIMESTAMPTZ
-);
+) PARTITION BY RANGE (event_ts);
+
+-- La partición por defecto y las mensuales se crean desde
+-- AuditPartitionJob (ApplicationRunner + cron) porque DO $$ no sobrevive
+-- al splitter de spring.sql.init.
 CREATE INDEX IF NOT EXISTS idx_ai_audit_worm ON ai_audit (worm_exported_at) WHERE worm_exported_at IS NULL;
 
 CREATE TABLE IF NOT EXISTS audit_worm_chunks (
