@@ -29,7 +29,22 @@ CREATE TABLE IF NOT EXISTS ai_audit (
     tool_ok BOOLEAN,
     auth_method TEXT,
     auth_ok BOOLEAN,
-    error TEXT
+    error TEXT,
+    worm_exported_at TIMESTAMPTZ
+);
+CREATE INDEX IF NOT EXISTS idx_ai_audit_worm ON ai_audit (worm_exported_at) WHERE worm_exported_at IS NULL;
+
+CREATE TABLE IF NOT EXISTS audit_worm_chunks (
+    id BIGSERIAL PRIMARY KEY,
+    file_name TEXT NOT NULL UNIQUE,
+    first_event_id BIGINT NOT NULL,
+    last_event_id BIGINT NOT NULL,
+    first_event_ts TIMESTAMPTZ NOT NULL,
+    last_event_ts TIMESTAMPTZ NOT NULL,
+    prev_hash TEXT,
+    chunk_hash TEXT NOT NULL,
+    event_count INT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE INDEX IF NOT EXISTS idx_ai_audit_ts ON ai_audit (event_ts DESC);

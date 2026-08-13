@@ -42,7 +42,49 @@ public class AuditRepository {
     }
 
     public int purgeBefore(java.time.Instant cutoff) {
-        return jdbc.update("DELETE FROM ai_audit WHERE event_ts < ?", java.sql.Timestamp.from(cutoff));
+        // Integridad WORM: solo se purgan eventos previamente exportados.
+        return jdbc.update("DELETE FROM ai_audit WHERE event_ts < ? AND worm_exported_at IS NOT NULL",
+                java.sql.Timestamp.from(cutoff));
+    }
+
+    public List<AuditEvent> listUnexportedBefore(java.time.Instant cutoff, int limit) {
+        return jdbc.query("SELECT " + COLUMNS + " FROM ai_audit "
+                        + "WHERE worm_exported_at IS NULL AND event_ts < ? ORDER BY id LIMIT ?",
+                (rs, i) -> map(rs), java.sql.Timestamp.from(cutoff), limit);
+    }
+
+    public void markExported(java.util.List<Long> ids) {
+        if (ids.isEmpty()) {
+            return;
+        }
+        var placeholders = String.join(",", java.util.Collections.nCopies(ids.size(), "?"));
+        jdbc.update("UPDATE ai_audit SET worm_exported_at = now() WHERE id IN (" + placeholders + ")",
+                ids.toArray());
+    }
+
+    public void recordWormChunk(String fileName, long firstEventId, long lastEventId,
+                                java.time.Instant firstEventTs, java.time.Instant lastEventTs,
+                                String prevHash, String chunkHash, int eventCount) {
+        jdbc.update("INSERT INTO audit_worm_chunks "
+                        + "(file_name, first_event_id, last_event_id, first_event_ts, last_event_ts, "
+                        + " prev_hash, chunk_hash, event_count) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                fileName, firstEventId, lastEventId, java.sql.Timestamp.from(firstEventTs),
+                java.sql.Timestamp.from(lastEventTs), prevHash, chunkHash, eventCount);
+    }
+
+    public List<WormChunk> wormChunks() {
+        return jdbc.query("SELECT file_name, first_event_id, last_event_id, first_event_ts, last_event_ts, "
+                + "prev_hash, chunk_hash, event_count FROM audit_worm_chunks ORDER BY id",
+                (rs, i) -> new WormChunk(
+                        rs.getString("file_name"), rs.getLong("first_event_id"), rs.getLong("last_event_id"),
+                        rs.getTimestamp("first_event_ts").toInstant(),
+                        rs.getTimestamp("last_event_ts").toInstant(),
+                        rs.getString("prev_hash"), rs.getString("chunk_hash"), rs.getInt("event_count")));
+    }
+
+    public record WormChunk(String fileName, long firstEventId, long lastEventId,
+                            java.time.Instant firstEventTs, java.time.Instant lastEventTs,
+                            String prevHash, String chunkHash, int eventCount) {
     }
 
     public void recordAuth(String method, String principal, boolean ok) {

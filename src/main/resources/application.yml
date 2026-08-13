@@ -116,6 +116,11 @@ app:
     audit:
         retention-days: 90
         purge-cron: "0 0 3 * * *"
+        worm:
+            enabled: ${WORM_ENABLED:true}
+            dir: ${WORM_DIR:data/worm}
+            cron: "0 0 2 * * *"
+            batch-size: 500
 
 logging:
     level:
