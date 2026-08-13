@@ -5,7 +5,10 @@
     "urlPath": "/chat/completions",
     "bodyPatterns": [
       {
-        "contains": "information_schema"
+        "contains": "bucle"
+      },
+      {
+        "contains": "\"role\":\"tool\""
       }
     ]
   },

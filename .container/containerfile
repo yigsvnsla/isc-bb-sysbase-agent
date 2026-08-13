@@ -4,17 +4,30 @@ WORKDIR /app
 COPY . .
 RUN ./mvnw -B -ntp -DskipTests package
 
-# Runtime stage — sandbox: non-root, sin shell
+# Runtime stage — sandbox: non-root, rootfs read-only, sin shell de depuración.
+# Nota: no hay base distroless para Java 26 (gcr.io/distroless llega a java21) —
+# se usa eclipse-temurin:26-jre endurecido (non-root + read-only + tmpfs + curl solo
+# para healthcheck). Revisar distroless cuando exista java26.
 FROM eclipse-temurin:26-jre
-RUN useradd -r -u 10001 agent && mkdir -p /app /app/config && chown -R agent:agent /app
+RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates \
+    && rm -rf /var/lib/apt/lists/* \
+    && useradd -r -u 10001 agent \
+    && mkdir -p /app /app/cache /app/data /app/config /tmp \
+    && chown -R agent:agent /app /tmp
 USER agent
 WORKDIR /app
 COPY --from=build /app/target/*.jar app.jar
 
-# TODO(futuro): rootfs read-only (--read-only) + tmpfs en /tmp al ejecutar.
-# TODO(futuro): pasar .env/secretos via mount en /app/config (no copiar en la imagen).
-# TODO(futuro): escaneo trivy de la imagen en CI.
-# TODO(futuro): healthcheck HTTP contra /actuator/health.
+# /app/cache: modelos ONNX descargados (transformers) — montar volumen.
+# /app/data: export WORM (data/worm) — montar volumen.
+# /app/config: secretos (.env) — montar volumen, nunca copiados en la imagen.
+# /tmp: tmpfs (java.io.tmpdir) para rootfs read-only.
+ENV ONNX_CACHE_DIR=/app/cache \
+    APP_AUDIT_WORM_DIR=/app/data/worm \
+    JAVA_TOOL_OPTIONS="-Djava.io.tmpdir=/tmp -XX:+ExitOnOutOfMemoryError"
+VOLUME /tmp /app/config /app/cache /app/data
 
 EXPOSE 8080
+HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
+    CMD curl -fs http://localhost:8080/api/actuator/health || exit 1
 ENTRYPOINT ["java", "-jar", "app.jar"]

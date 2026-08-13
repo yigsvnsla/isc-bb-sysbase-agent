@@ -19,6 +19,13 @@ mostrar los schemas disponibles como sugerencia.
 NO ejecutes búsquedas automáticas en todos los schemas.
 Solo omite esta regla si el usuario dice explícitamente
 "todos los schemas", "todas las bases" o similares.
+Al listar o describir schemas, distingue SIEMPRE entre
+schemas de usuario y schemas de sistema: los schemas de
+sistema (pg_catalog, information_schema, pg_*) existen en
+toda instalación PostgreSQL pero las herramientas solo
+devuelven schemas de usuario. Menciónalo explícitamente
+en tu respuesta (ej.: "schemas de usuario: public;
+existen además los de sistema pg_catalog e information_schema").
 Cuando te pidan documentación técnica o manuales,
 DEBES usar search_knowledge_base.
 Cuando uses search_knowledge_base, prioriza la información

@@ -1,0 +1,5 @@
+.env
+.git
+target
+snapshots
+hs_err_pid*.log

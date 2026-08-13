@@ -28,3 +28,38 @@ jobs:
           name: sbom
           path: target/bom.json
           if-no-files-found: warn
+
+  security:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: .container/containerfile
+          push: false
+          load: true
+          tags: sysbase-agent:ci
+
+      - name: Trivy image scan (HIGH/CRITICAL gate)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: sysbase-agent:ci
+          format: sarif
+          output: trivy-results.sarif
+          severity: HIGH,CRITICAL
+          exit-code: '1'
+
+      - name: Upload SARIF
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-results.sarif
