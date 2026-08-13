@@ -32,6 +32,17 @@ public class ApiKeyAuthFilter extends OncePerRequestFilter {
             return;
         }
         var header = request.getHeader("X-API-Key");
+        String consumedBearer = null;
+        if (header == null || header.isBlank()) {
+            // Compatibilidad OpenAI: clientes (p.ej. OpenWebUI) envían la API key
+            // como Authorization: Bearer <key>. Si no es un JWT, el lookup por hash
+            // fallará y la cadena sigue al decoder JWT normalmente.
+            var bearer = request.getHeader("Authorization");
+            if (bearer != null && bearer.regionMatches(true, 0, "Bearer ", 0, 7)) {
+                header = bearer.substring(7).trim();
+                consumedBearer = header;
+            }
+        }
         if (header == null || header.isBlank()) {
             chain.doFilter(request, response);
             return;
@@ -47,8 +58,39 @@ public class ApiKeyAuthFilter extends OncePerRequestFilter {
             var auth = new UsernamePasswordAuthenticationToken(
                     apiKey.name(), null, List.of(new SimpleGrantedAuthority("ROLE_" + apiKey.role())));
             SecurityContextHolder.getContext().setAuthentication(auth);
+            if (consumedBearer != null) {
+                // BearerTokenAuthenticationFilter (Security 7) no chequea el contexto y
+                // pisaría la auth con un 401 al ver el bearer no-JWT. Ocultar el header.
+                request = new BearerStrippingRequest(request);
+            }
         }
         chain.doFilter(request, response);
+    }
+
+    /** Wrapper que oculta el header Authorization una vez consumido como API key. */
+    private static final class BearerStrippingRequest extends jakarta.servlet.http.HttpServletRequestWrapper {
+        BearerStrippingRequest(HttpServletRequest request) {
+            super(request);
+        }
+
+        @Override
+        public String getHeader(String name) {
+            return "authorization".equalsIgnoreCase(name) ? null : super.getHeader(name);
+        }
+
+        @Override
+        public java.util.Enumeration<String> getHeaders(String name) {
+            return "authorization".equalsIgnoreCase(name)
+                    ? java.util.Collections.emptyEnumeration()
+                    : super.getHeaders(name);
+        }
+
+        @Override
+        public java.util.Enumeration<String> getHeaderNames() {
+            var names = java.util.Collections.list(super.getHeaderNames());
+            names.removeIf(n -> "authorization".equalsIgnoreCase(n));
+            return java.util.Collections.enumeration(names);
+        }
     }
 
     private boolean isExpired(ApiKeyRepository.ApiKey apiKey) {

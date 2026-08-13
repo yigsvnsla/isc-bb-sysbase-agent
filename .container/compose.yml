@@ -93,11 +93,13 @@ services:
     image: ghcr.io/open-webui/open-webui:main
     container_name: sp-open-webui
     ports:
-      - "3000:8080"
+      - "3010:8080"
     volumes:
       - open-webui-data:/app/backend/data
     environment:
       - OLLAMA_BASE_URL=
+      - OPENAI_API_BASE_URLS=http://host.containers.internal:8080/api
+      - OPENAI_API_KEYS=${OWUI_API_KEY:-sk-owui-sysbase-demo-2026}
     restart: unless-stopped
     profiles:
       - web

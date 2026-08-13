@@ -60,7 +60,7 @@ public class SecurityConfig {
                         .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter))
                         .authenticationEntryPoint(auditEntryPoint(audit, meters)))
                 .exceptionHandling(ex -> ex.authenticationEntryPoint(auditEntryPoint(audit, meters)))
-                .addFilterBefore(apiKeyAuthFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(apiKeyAuthFilter, org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter.class)
                 .addFilterAfter(rateLimitFilter, AuthorizationFilter.class)
                 .addFilterAfter(authAuditFilter, RateLimitFilter.class);
         return http.build();

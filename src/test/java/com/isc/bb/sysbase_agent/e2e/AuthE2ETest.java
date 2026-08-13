@@ -58,6 +58,18 @@ class AuthE2ETest extends AbstractIntegrationTest {
     }
 
     @Test
+    void apiKeyAsBearerToken_returns200() {
+        var plain = apiKeyRepository.create("e2e-key-bearer", "READONLY", null);
+        var headers = authHeaders();
+        headers.setBearerAuth(plain);
+        var resp = rest.postForEntity("/v1/agent/chat",
+                new HttpEntity<>("""
+                        {"conversationId":"auth-5","message":"hola"}
+                        """, headers), String.class);
+        assertThat(resp.getStatusCode().is2xxSuccessful()).isTrue();
+    }
+
+    @Test
     void invalidApiKey_returns401() {
         var headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
