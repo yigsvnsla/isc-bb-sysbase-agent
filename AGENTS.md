@@ -21,6 +21,11 @@ SPRING_PROFILES_ACTIVE=prod ./mvnw spring-boot:run # producción (solo Shell)
 - **Cache + memory**: Redis (misma instancia para chat memory + cache `sp_source`, `sp_search`)
 - **AI model**: DeepSeek chat (vía `spring-ai-starter-model-openai`) + ONNX Transformer embeddings (`spring-ai-starter-model-transformers`) — default `all-MiniLM-L6-v2` (384d)
 - **Model Router** (Fase 1+2): `ModelRouter` clasifica cada prompt en tier `CHEAP` o `EXPENSIVE` vía heurística (intent regex + keywords + longitud + historial ≥10 msgs). Para scores en rango gris (0.35-0.55), invoca `LlmClassifier` (micro-LLM, maxTokens=8, temperature=0, timeout 1.5s) que responde `CHEAP`/`EXPENSIVE`. Cache Redis `router:dec:{sha256}` TTL 1h evita reclasificar prompts repetidos. Tres beans `ChatClient` (`chatClientCheap`/`chatClientExpensive`/`chatClientClassifier`) con modelos distintos. Threshold `app.ai.router.score-threshold: 0.6`. Métricas: `ai_router_decisions_total{tier}`, `ai_chat_duration_seconds{tier}`, `ai_router_classifier_calls_total{outcome}`, `ai_router_cache_total{result}` en actuator.
+- **Auditoría + WORM** (F2/F12a): `ai_audit` particionada por mes (PG nativo, partición default + mensuales vía `AuditPartitionJob`); export JSONL append-only con hash chain SHA-256 (`AuditWormExportService`, cron 02:00, `app.audit.worm.*`), CLI `worm-export`/`worm-verify`; purge solo borra eventos exportados (`purgeBefore`), luego dropea particiones vencidas si no quedan sin exportar.
+- **HITL** (F14): tools de escritura (`index_procedure`) en contexto HTTP crean solicitud PENDING en `approval_requests` — REST `/v1/admin/approvals` (solo ADMIN) GET/approve/reject + CLI `approvals-list/approve/reject`; al aprobar se ejecuta la tool real con args originales y se audita. Shell (rol null) ejecuta directo.
+- **JWT**: firma HS256 con `kid` (header), decoder selecciona clave por kid (`JwtDecoders.withKid`, 2 claves activas para rotación sin downtime), propiedades `app.security.jwt.key-id`/`previous-key-id`.
+- **Seguridad contenedor** (F13): `.container/containerfile` non-root + rootfs read-only + tmpfs `/tmp` + volúmenes `/app/config /app/cache(ONNX) /app/data(WORM)`; healthcheck `/api/actuator/health`; Trivy HIGH/CRITICAL gate en CI (`.github/workflows/ci.yml` job `security`); `.dockerignore` excluye `.env`.
+- **Alertas**: `.container/prometheus/alert.rules.yml` (8 reglas) + métrica `ai_token_budget_daily_chars` (gauge, alarma 80% vía `TokenBudgetWarning`).
 - **Interfaces**: Spring Shell CLI (principal), REST v1 (controller), REST v2 (functional)
 - **Container**: `.container/compose.yml` (PostgreSQL + Redis); `containerfile` still empty
 
@@ -50,16 +55,17 @@ SPRING_PROFILES_ACTIVE=prod ./mvnw spring-boot:run # producción (solo Shell)
 - **Maven wrapper 3.9.16** — use `./mvnw`, not system `mvn`
 - **Java 26** — verify JDK 26 is installed; boot plugin is `4.1.1-SNAPSHOT` (pre-release, pulls from `repo.spring.io/snapshot`)
 - **Lombok** requires annotation processor config in `pom.xml` (already done)
-- **No git commits yet** — repo is fresh; first commit should exclude `.env` and `target/`
+- **Tests con Testcontainers** necesitan el socket de podman: `export DOCKER_HOST=unix:///run/user/$(id -u)/podman/podman.sock` (daemon rootless con `--time=0` vía `~/.config/systemd/user/podman.service.d/idle.conf`)
 
 ## Testing
 
 ```bash
-./mvnw test                         # all tests
+export DOCKER_HOST=unix:///run/user/$(id -u)/podman/podman.sock
+./mvnw test                         # all tests (Testcontainers PG+Redis, suite ~95 tests)
 ./mvnw test -Dtest=SysbaseAgentApplicationTests  # single test
 ```
 
-Only one test exists (`@SpringBootTest` context load). Needs PG running — use `.container/compose.yml` or `@Disabled` if DB unavailable.
+Los tests integran con Testcontainers (PG/Redis reales vía podman). El eval harness (`EvalHarnessTest`, incl. LLM-judge) se omite sin `IA_API_KEY` exportada como env real.
 
 ## Verification order
 
