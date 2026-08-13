@@ -10,7 +10,7 @@ Referencias: OWASP Top 10 LLM 2025, OWASP Agentic Security Initiative, MITRE ATL
 | LLM03 Supply Chain | Versiones pinneadas; SBOM en CI; AIBOM | aibom.md, pom.xml |
 | LLM04 Data Poisoning | Ingesta controlada por ruta; metadata source | KnowledgeBaseLoader |
 | LLM05 Improper Output Handling | MarkdownFixer; salida nunca ejecutada; sin HTML render | MarkdownFixer |
-| LLM06 Excessive Agency | Solo tools de lectura; deny-by-default; HITL TODO | ToolAccessGuard, AgentConfig |
+| LLM06 Excessive Agency | Tools protegidas por rol; deny-by-default; límite de tool-calls por turno | ToolAccessGuard, ToolCallLoopLimitAdvisor |
 | LLM07 System Prompt Leakage | Prompt en classpath versionado; red-team | system.md |
 | LLM08 Vector Weaknesses | Threshold 0.25; RBAC DB; revisión de fuentes | KnowledgeBaseTool |
 | LLM09 Misinformation | RAG prioriza docs; eval harness; verificación humana | EvalHarnessTest |
@@ -19,7 +19,7 @@ Referencias: OWASP Top 10 LLM 2025, OWASP Agentic Security Initiative, MITRE ATL
 ## Amenazas agentic (OWASP Agentic Security)
 | Amenaza | Postura |
 |---|---|
-| Unbounded Agency | Sin tools de escritura registradas; límite de iteraciones pendiente (TODO) |
+| Unbounded Agency | Límite de tool-calls por turno (ToolCallLoopLimitAdvisor, default 5) + RBAC deny-by-default + única tool de escritura (index_procedure) protegida por rol | ToolCallLoopLimitAdvisor, ToolAccessGuard |
 | Unbounded Consumption | Rate limit + budget (mitigado) |
 | Deficient Identity | JWT HMAC + API keys con rol (mitigado) |
 | Social Engineering | Red-team de jailbreaks; detección post-hoc TODO |

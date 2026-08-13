@@ -31,6 +31,7 @@ import com.isc.bb.sysbase_agent.loader.SpDocLoader;
 import com.isc.bb.sysbase_agent.memory.RedisChatMemoryRepository;
 import com.isc.bb.sysbase_agent.security.AuditedToolCallback;
 import com.isc.bb.sysbase_agent.security.ToolAccessGuard;
+import com.isc.bb.sysbase_agent.security.ToolCallLoopLimitAdvisor;
 import com.isc.bb.sysbase_agent.tools.KnowledgeBaseTool;
 import com.isc.bb.sysbase_agent.tools.PostgresTools;
 
@@ -88,26 +89,37 @@ public class AgentConfig {
     ChatClient chatClientCheap(ChatClient.Builder builder,
                                ToolCallback[] toolCallbacks,
                                ChatMemory chatMemory,
+                               ToolCallLoopLimitAdvisor loopLimitAdvisor,
                                @Value("${app.ai.router.cheap-model:deepseek-v4-flash}") String cheapModel) {
-        return configureClient(builder, toolCallbacks, chatMemory, cheapModel);
+        return configureClient(builder, toolCallbacks, chatMemory, loopLimitAdvisor, cheapModel);
     }
 
     @Bean(name = "chatClientExpensive")
     ChatClient chatClientExpensive(ChatClient.Builder builder,
                                    ToolCallback[] toolCallbacks,
                                    ChatMemory chatMemory,
+                                   ToolCallLoopLimitAdvisor loopLimitAdvisor,
                                    @Value("${app.ai.router.expensive-model:deepseek-v4-pro}") String expensiveModel) {
-        return configureClient(builder, toolCallbacks, chatMemory, expensiveModel);
+        return configureClient(builder, toolCallbacks, chatMemory, loopLimitAdvisor, expensiveModel);
+    }
+
+    @Bean
+    ToolCallLoopLimitAdvisor toolCallLoopLimitAdvisor(
+            @Value("${app.ai.agent.max-tool-calls-per-turn:5}") int maxToolCalls) {
+        return new ToolCallLoopLimitAdvisor(maxToolCalls);
     }
 
     private ChatClient configureClient(ChatClient.Builder builder,
                                        ToolCallback[] toolCallbacks,
                                        ChatMemory chatMemory,
+                                       ToolCallLoopLimitAdvisor loopLimitAdvisor,
                                        String model) {
         return builder.clone()
                 .defaultOptions(OpenAiChatOptions.builder().model(model))
                 .defaultSystem(SYSTEM_PROMPT)
-                .defaultAdvisors(MessageChatMemoryAdvisor.builder(chatMemory).build())
+                .defaultAdvisors(
+                        MessageChatMemoryAdvisor.builder(chatMemory).build(),
+                        loopLimitAdvisor)
                 .defaultTools((Object[]) toolCallbacks)
                 .build();
     }

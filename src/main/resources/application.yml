@@ -66,6 +66,8 @@ app:
         pdf-dir: ${KNOWLEDGE_BASE_PDF_DIR:classpath:static/documents}
     ai:
         stream-fix-id: true
+        agent:
+            max-tool-calls-per-turn: ${MAX_TOOL_CALLS_PER_TURN:5}
         budget:
             enabled: true
             requests-per-day: 500
