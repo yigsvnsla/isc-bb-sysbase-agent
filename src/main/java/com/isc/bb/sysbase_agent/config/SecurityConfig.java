@@ -87,8 +87,10 @@ public class SecurityConfig {
     @Bean
     JwtDecoder jwtDecoder(@Value("${app.security.jwt.secret}") String secret,
                           @Value("${app.security.jwt.previous-secret:}") String previousSecret,
+                          @Value("${app.security.jwt.key-id:current}") String keyId,
+                          @Value("${app.security.jwt.previous-key-id:previous}") String previousKeyId,
                           @Value("${app.security.oidc.issuer-uri:}") String oidcIssuer) {
-        var own = JwtDecoders.withFallback(secret, previousSecret);
+        var own = JwtDecoders.withKid(keyId, secret, previousKeyId, previousSecret);
         if (oidcIssuer == null || oidcIssuer.isBlank()) {
             return own;
         }

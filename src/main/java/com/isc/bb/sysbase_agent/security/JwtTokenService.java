@@ -20,11 +20,14 @@ public class JwtTokenService {
 
     private final SecretKey key;
     private final Duration ttl;
+    private final String keyId;
 
     public JwtTokenService(@Value("${app.security.jwt.secret}") String secret,
-                           @Value("${app.security.jwt.ttl-minutes:60}") long ttlMinutes) {
+                           @Value("${app.security.jwt.ttl-minutes:60}") long ttlMinutes,
+                           @Value("${app.security.jwt.key-id:current}") String keyId) {
         this.key = new SecretKeySpec(secret.getBytes(java.nio.charset.StandardCharsets.UTF_8), "HmacSHA256");
         this.ttl = Duration.ofMinutes(ttlMinutes);
+        this.keyId = keyId;
     }
 
     public String issue(String subject, String role) {
@@ -37,7 +40,11 @@ public class JwtTokenService {
                     .issueTime(new Date())
                     .expirationTime(new Date(System.currentTimeMillis() + ttl.toMillis()))
                     .build();
-            var jwt = new SignedJWT(new JWSHeader(JWSAlgorithm.HS256), claims);
+            var headerBuilder = new JWSHeader.Builder(JWSAlgorithm.HS256);
+            if (keyId != null && !keyId.isBlank()) {
+                headerBuilder.keyID(keyId);
+            }
+            var jwt = new SignedJWT(headerBuilder.build(), claims);
             jwt.sign(signer);
             return jwt.serialize();
         } catch (Exception e) {

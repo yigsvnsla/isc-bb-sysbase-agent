@@ -15,7 +15,7 @@ class JwtRotationTest {
 
     @Test
     void tokenSignedWithPreviousSecret_stillValid() {
-        var issuer = new JwtTokenService(PREVIOUS, 60);
+        var issuer = new JwtTokenService(PREVIOUS, 60, "previous");
         var decoder = JwtDecoders.withFallback(CURRENT, PREVIOUS);
 
         var jwt = decoder.decode(issuer.issue("user-1", "READONLY"));
@@ -25,8 +25,26 @@ class JwtRotationTest {
     }
 
     @Test
+    void kidKnown_tokenDecodedWithMatchingKey() {
+        var issuer = new JwtTokenService(CURRENT, 60, "k-2026-08");
+        var decoder = JwtDecoders.withKid("k-2026-08", CURRENT, "k-2026-01", PREVIOUS);
+
+        var jwt = decoder.decode(issuer.issue("user-5", "DOC"));
+
+        assertThat(jwt.getClaimAsString("role")).isEqualTo("DOC");
+    }
+
+    @Test
+    void kidUnknown_stillValidatesWhenSignatureMatches() {
+        var issuer = new JwtTokenService(CURRENT, 60, "k-cualquiera");
+        var decoder = JwtDecoders.withKid("k-2026-08", CURRENT, "k-2026-01", PREVIOUS);
+
+        assertThat(decoder.decode(issuer.issue("user-6", "ADMIN")).getSubject()).isEqualTo("user-6");
+    }
+
+    @Test
     void tokenSignedWithCurrentSecret_valid() {
-        var issuer = new JwtTokenService(CURRENT, 60);
+        var issuer = new JwtTokenService(CURRENT, 60, "current");
         var decoder = JwtDecoders.withFallback(CURRENT, PREVIOUS);
 
         var jwt = decoder.decode(issuer.issue("user-2", "DOC"));
@@ -37,7 +55,7 @@ class JwtRotationTest {
 
     @Test
     void tokenSignedWithUnknownSecret_rejected() {
-        var issuer = new JwtTokenService(UNKNOWN, 60);
+        var issuer = new JwtTokenService(UNKNOWN, 60, "unknown");
         var decoder = JwtDecoders.withFallback(CURRENT, PREVIOUS);
 
         assertThatThrownBy(() -> decoder.decode(issuer.issue("user-3", "READONLY")))
@@ -46,7 +64,7 @@ class JwtRotationTest {
 
     @Test
     void noPreviousSecret_singleDecoderStillWorks() {
-        var issuer = new JwtTokenService(CURRENT, 60);
+        var issuer = new JwtTokenService(CURRENT, 60, "current");
         var decoder = JwtDecoders.withFallback(CURRENT, "");
 
         assertThat(decoder.decode(issuer.issue("user-4", "ADMIN")).getSubject()).isEqualTo("user-4");
