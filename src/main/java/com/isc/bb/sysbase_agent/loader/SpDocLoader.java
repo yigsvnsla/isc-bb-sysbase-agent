@@ -64,8 +64,6 @@ public class SpDocLoader implements CommandLineRunner {
         return "SP indexado correctamente: " + (schema != null ? schema : "public") + "." + name;
     }
 
-    // TODO(futuro): HITL con cola de aprobación (REST 202 + endpoint de aprobar) para escrituras
-    // desde HTTP. Hoy la barrera humana es el rol autenticado (DOC/ADMIN vía ToolAccessGuard).
 
     private List<Document> parseFile(Path file) throws IOException {
         var content = Files.readString(file);

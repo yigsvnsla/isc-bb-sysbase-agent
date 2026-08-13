@@ -30,7 +30,5 @@ public record AuditEvent(
     public static final String TYPE_TOOL = "TOOL";
     public static final String TYPE_AUTH = "AUTH";
 
-    // TODO(futuro): retención automática (particionado por mes + purge > 90 días).
-    // TODO(futuro): exportación inmutable (WORM) para cumplimiento.
     // TODO(futuro): tokens_in/tokens_out cuando Spring AI exponga usage en call().
 }

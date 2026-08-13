@@ -150,7 +150,5 @@ public class AuditedToolCallback implements ToolCallback {
     }
 
     // TODO(futuro): filtrar las tools del schema LLM por rol (mejor que rechazo en runtime).
-    // TODO(futuro): registrar index_procedure (SpDocLoader) en el conjunto de tools.
     // TODO(futuro): detector post-hoc de tool-calls inyectados (LLM-judge sobre la cadena de llamadas).
-    // TODO(futuro): HITL para index_procedure cuando se registre: flujo REST 202 + endpoint de aprobación.
 }

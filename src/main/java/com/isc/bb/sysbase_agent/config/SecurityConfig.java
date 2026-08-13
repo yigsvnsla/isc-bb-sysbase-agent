@@ -39,7 +39,6 @@ import jakarta.servlet.http.HttpServletResponse;
 @EnableWebSecurity
 public class SecurityConfig {
 
-    // TODO(futuro): rotación de JWT_SECRET sin downtime (2 keys activas con kid).
     // TODO(futuro): rate limiting por usuario/token (Bucket4j o Spring Cloud Gateway).
 
     @Bean

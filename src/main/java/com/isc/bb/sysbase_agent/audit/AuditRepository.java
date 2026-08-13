@@ -216,5 +216,4 @@ public class AuditRepository {
         return rs.wasNull() ? null : value;
     }
 
-    // TODO(futuro): export CSV/Parquet + purge por política de retención.
 }
