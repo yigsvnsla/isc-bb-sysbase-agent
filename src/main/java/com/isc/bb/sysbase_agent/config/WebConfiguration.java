@@ -18,7 +18,6 @@ public class WebConfiguration implements WebMvcConfigurer {
 
     @Override
     public void addCorsMappings(CorsRegistry registry) {
-        // TODO(futuro): definir dominios reales de producción y quitar el wildcard de origen.
         registry.addMapping("/**")
                 .allowedOriginPatterns(corsOrigins.toArray(String[]::new))
                 .allowedMethods("GET", "POST", "OPTIONS")

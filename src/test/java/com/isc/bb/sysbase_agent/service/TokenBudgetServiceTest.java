@@ -25,7 +25,7 @@ class TokenBudgetServiceTest {
                                        ValueOperations<String, String> ops) {
         var redis = mock(StringRedisTemplate.class);
         when(redis.opsForValue()).thenReturn(ops);
-        return new TokenBudgetService(redis, true, requestsPerDay, charsPerDay, msgsPerConversation);
+        return new TokenBudgetService(redis, true, requestsPerDay, charsPerDay, msgsPerConversation, new io.micrometer.core.instrument.simple.SimpleMeterRegistry());
     }
 
     @Test
@@ -34,7 +34,7 @@ class TokenBudgetServiceTest {
         when(ops.increment(anyString())).thenReturn(1L);
         var redis = mock(StringRedisTemplate.class);
         when(redis.opsForValue()).thenReturn(ops);
-        var service = new TokenBudgetService(redis, true, 500, 400_000, 100);
+        var service = new TokenBudgetService(redis, true, 500, 400_000, 100, new io.micrometer.core.instrument.simple.SimpleMeterRegistry());
 
         assertThat(service.allowRequest("user-1")).isTrue();
         verify(redis).expire(anyString(), any(Duration.class));

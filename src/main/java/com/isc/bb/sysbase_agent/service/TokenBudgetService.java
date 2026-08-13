@@ -2,30 +2,38 @@ package com.isc.bb.sysbase_agent.service;
 
 import java.time.Duration;
 import java.time.LocalDate;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
+import io.micrometer.core.instrument.MeterRegistry;
+
 @Service
 public class TokenBudgetService {
 
     private final StringRedisTemplate redis;
+    private final MeterRegistry meters;
     private final boolean enabled;
     private final long requestsPerDay;
     private final long charsPerDay;
     private final int msgsPerConversation;
+    private final AtomicLong dailyChars = new AtomicLong();
 
     public TokenBudgetService(StringRedisTemplate redis,
                               @Value("${app.ai.budget.enabled:true}") boolean enabled,
                               @Value("${app.ai.budget.requests-per-day:500}") long requestsPerDay,
                               @Value("${app.ai.budget.chars-per-day:400000}") long charsPerDay,
-                              @Value("${app.ai.budget.msgs-per-conversation:100}") int msgsPerConversation) {
+                              @Value("${app.ai.budget.msgs-per-conversation:100}") int msgsPerConversation,
+                              MeterRegistry meters) {
         this.redis = redis;
         this.enabled = enabled;
         this.requestsPerDay = requestsPerDay;
         this.charsPerDay = charsPerDay;
         this.msgsPerConversation = msgsPerConversation;
+        this.meters = meters;
+        meters.gauge("ai_token_budget_daily_chars", dailyChars);
     }
 
     /** null user = contexto local (CLI) → sin límite. */
@@ -52,8 +60,11 @@ public class TokenBudgetService {
         if (total != null && total == chars) {
             redis.expire(key, Duration.ofDays(1));
         }
-        if (total != null && total > charsPerDay) {
-            // TODO(futuro): alerta Prometheus al 80% del presupuesto y rechazo proactivo.
+        if (total != null) {
+            dailyChars.set(total);
+            if (total > Math.round(charsPerDay * 0.8)) {
+                meters.counter("ai_token_budget_warnings_total", "threshold", "80pct").increment();
+            }
         }
     }
 

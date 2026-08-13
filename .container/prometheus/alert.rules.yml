@@ -84,3 +84,13 @@ groups:
         annotations:
           summary: "Uso del modelo caro elevado (>70%)"
           description: "La proporción de decisiones EXPENSIVE supera el 70%. Revisar prompts y threshold del router."
+
+      - alert: TokenBudgetHigh
+        expr: ai_token_budget_daily_chars > 320000
+        for: 10m
+        labels:
+          severity: warning
+          runbook_url: docs/governance/runbook.md
+        annotations:
+          summary: "Consumo al 80% del presupuesto diario de tokens"
+          description: "ai_token_budget_daily_chars > 320000 (80% de 400000 chars/día default). Revisar presupuesto: reduce carga o sube app.ai.budget.chars-per-day."
