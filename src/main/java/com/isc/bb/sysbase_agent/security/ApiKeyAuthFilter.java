@@ -58,6 +58,7 @@ public class ApiKeyAuthFilter extends OncePerRequestFilter {
             var auth = new UsernamePasswordAuthenticationToken(
                     apiKey.name(), null, List.of(new SimpleGrantedAuthority("ROLE_" + apiKey.role())));
             SecurityContextHolder.getContext().setAuthentication(auth);
+            request.setAttribute(AsyncSecurityContextRestoreFilter.AUTH_ATTRIBUTE, auth);
             if (consumedBearer != null) {
                 // BearerTokenAuthenticationFilter (Security 7) no chequea el contexto y
                 // pisaría la auth con un 401 al ver el bearer no-JWT. Ocultar el header.

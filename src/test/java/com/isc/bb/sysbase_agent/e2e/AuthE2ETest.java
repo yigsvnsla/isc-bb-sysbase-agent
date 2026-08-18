@@ -70,6 +70,21 @@ class AuthE2ETest extends AbstractIntegrationTest {
     }
 
     @Test
+    void apiKeyBearer_sseChatCompletions_streamCompletes() {
+        var plain = apiKeyRepository.create("e2e-key-sse", "READONLY", null);
+        var headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBearerAuth(plain);
+        var body = """
+                {"model":"sysbase-agent","messages":[{"role":"user","content":"hola"}]}
+                """;
+        var resp = rest.postForEntity("/chat/completions",
+                new HttpEntity<>(body, headers), String.class);
+        assertThat(resp.getStatusCode().is2xxSuccessful()).isTrue();
+        assertThat(resp.getBody()).contains("[DONE]");
+    }
+
+    @Test
     void invalidApiKey_returns401() {
         var headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);

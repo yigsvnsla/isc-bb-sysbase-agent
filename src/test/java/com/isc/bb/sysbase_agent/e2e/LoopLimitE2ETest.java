@@ -26,16 +26,19 @@ class LoopLimitE2ETest extends AbstractIntegrationTest {
 
     @Test
     void runawayToolLoop_isCutByTurnLimit() {
+        var headers = authHeaders();
+        // Subject único para no mezclar eventos TOOL de otras clases (PG compartido).
+        headers.setBearerAuth(tokenService.issue("e2e-loop", "READONLY"));
         var body = """
                 {"conversationId":"e2e-loop-1","message":"ejecuta un bucle de herramientas"}
                 """;
         var resp = rest.postForEntity("/v1/agent/chat",
-                new HttpEntity<>(body, authHeaders()), String.class);
+                new HttpEntity<>(body, headers), String.class);
 
         assertThat(resp.getStatusCode().is2xxSuccessful()).isTrue();
         assertThat(resp.getBody()).contains("iteraciones");
 
-        var toolCalls = audit.search(null, "e2e-tests", "TOOL", 50);
+        var toolCalls = audit.search(null, "e2e-loop", "TOOL", 50);
         assertThat(toolCalls).size().isLessThanOrEqualTo(5);
     }
 }

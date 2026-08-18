@@ -28,6 +28,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import com.isc.bb.sysbase_agent.audit.AuditRepository;
 import com.isc.bb.sysbase_agent.security.ApiKeyAuthFilter;
 import com.isc.bb.sysbase_agent.security.ApiKeyRepository;
+import com.isc.bb.sysbase_agent.security.AsyncSecurityContextRestoreFilter;
 import com.isc.bb.sysbase_agent.security.AuthAuditFilter;
 import com.isc.bb.sysbase_agent.security.JwtDecoders;
 import com.isc.bb.sysbase_agent.security.RateLimitFilter;
@@ -70,6 +71,19 @@ public class SecurityConfig {
     ApiKeyAuthFilter apiKeyAuthFilter(ApiKeyRepository apiKeyRepository,
                                       @Value("${app.security.api-keys.enabled:true}") boolean enabled) {
         return new ApiKeyAuthFilter(apiKeyRepository, enabled);
+    }
+
+    /**
+     * Filtro plano (fuera de la cadena de seguridad) que restaura la auth por
+     * API key en los dispatches ASYNC/ERROR — sin él, el SSE se abortaba con
+     * AccessDenied tras commit (Security 7 salta los filtros en async dispatch).
+     */
+    @Bean
+    org.springframework.boot.web.servlet.FilterRegistrationBean<AsyncSecurityContextRestoreFilter> asyncSecurityContextRestoreFilter() {
+        var registration = new org.springframework.boot.web.servlet.FilterRegistrationBean<>(
+                new AsyncSecurityContextRestoreFilter());
+        registration.setOrder(AsyncSecurityContextRestoreFilter.ORDER);
+        return registration;
     }
 
     private AuthenticationEntryPoint auditEntryPoint(AuditRepository audit, MeterRegistry meters) {
