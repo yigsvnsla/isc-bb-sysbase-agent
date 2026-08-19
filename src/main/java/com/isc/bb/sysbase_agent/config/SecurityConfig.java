@@ -93,6 +93,7 @@ public class SecurityConfig {
                 meters.counter("ai_auth_events_total", "method", "unknown", "result", "failure").increment();
             } catch (Exception ignored) {
             }
+            response.setHeader(org.springframework.http.HttpHeaders.WWW_AUTHENTICATE, "Bearer");
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized");
         };
     }

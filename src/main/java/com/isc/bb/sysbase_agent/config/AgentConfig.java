@@ -105,20 +105,18 @@ public class AgentConfig {
 
     @Bean(name = "chatClientCheap")
     ChatClient chatClientCheap(ChatClient.Builder builder,
-                               ToolCallback[] toolCallbacks,
                                ChatMemory chatMemory,
                                ToolCallLoopLimitAdvisor loopLimitAdvisor,
                                @Value("${app.ai.router.cheap-model:deepseek-v4-flash}") String cheapModel) {
-        return configureClient(builder, toolCallbacks, chatMemory, loopLimitAdvisor, cheapModel);
+        return configureClient(builder, chatMemory, loopLimitAdvisor, cheapModel);
     }
 
     @Bean(name = "chatClientExpensive")
     ChatClient chatClientExpensive(ChatClient.Builder builder,
-                                   ToolCallback[] toolCallbacks,
                                    ChatMemory chatMemory,
                                    ToolCallLoopLimitAdvisor loopLimitAdvisor,
                                    @Value("${app.ai.router.expensive-model:deepseek-v4-pro}") String expensiveModel) {
-        return configureClient(builder, toolCallbacks, chatMemory, loopLimitAdvisor, expensiveModel);
+        return configureClient(builder, chatMemory, loopLimitAdvisor, expensiveModel);
     }
 
     @Bean
@@ -128,17 +126,18 @@ public class AgentConfig {
     }
 
     private ChatClient configureClient(ChatClient.Builder builder,
-                                       ToolCallback[] toolCallbacks,
                                        ChatMemory chatMemory,
                                        ToolCallLoopLimitAdvisor loopLimitAdvisor,
                                        String model) {
+        // Sin defaultTools: las tools se filtran por rol en AgentService (F3)
+        // y se pasan por request vía .tools(...) — así el LLM solo ve las
+        // permitidas para el rol, no las 22 siempre.
         return builder.clone()
                 .defaultOptions(OpenAiChatOptions.builder().model(model))
                 .defaultSystem(SYSTEM_PROMPT)
                 .defaultAdvisors(
                         MessageChatMemoryAdvisor.builder(chatMemory).build(),
                         loopLimitAdvisor)
-                .defaultTools((Object[]) toolCallbacks)
                 .build();
     }
 

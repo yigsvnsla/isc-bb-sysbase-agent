@@ -64,6 +64,10 @@ public abstract class AbstractIntegrationTest {
     @Autowired
     protected JwtTokenService tokenService;
 
+    protected com.github.tomakehurst.wiremock.WireMockServer wiremock() {
+        return wiremock;
+    }
+
     protected HttpHeaders authHeaders() {
         var headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);

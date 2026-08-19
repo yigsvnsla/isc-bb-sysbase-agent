@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.memory.ChatMemory;
+import org.springframework.ai.tool.ToolCallback;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -14,6 +15,7 @@ import com.isc.bb.sysbase_agent.audit.AuditRepository;
 import com.isc.bb.sysbase_agent.router.ModelRouter;
 import com.isc.bb.sysbase_agent.router.RouterDecision;
 import com.isc.bb.sysbase_agent.router.Tier;
+import com.isc.bb.sysbase_agent.security.ToolAccessGuard;
 import com.isc.bb.sysbase_agent.util.MarkdownFixer;
 
 import io.micrometer.core.instrument.MeterRegistry;
@@ -41,6 +43,8 @@ public class AgentService {
     private final AuditRepository audit;
     private final TokenBudgetService budget;
     private final Tracer tracer;
+    private final ToolCallback[] toolCallbacks;
+    private final ToolAccessGuard guard;
 
     public AgentService(@Qualifier("chatClientCheap") ChatClient cheapClient,
                         @Qualifier("chatClientExpensive") ChatClient expensiveClient,
@@ -49,7 +53,9 @@ public class AgentService {
                         MeterRegistry meterRegistry,
                         AuditRepository audit,
                         TokenBudgetService budget,
-                        @Qualifier("otelTracer") Tracer tracer) {
+                        @Qualifier("otelTracer") Tracer tracer,
+                        @Qualifier("agentToolCallbacks") ToolCallback[] toolCallbacks,
+                        ToolAccessGuard guard) {
         this.cheapClient = cheapClient;
         this.expensiveClient = expensiveClient;
         this.router = router;
@@ -58,6 +64,8 @@ public class AgentService {
         this.audit = audit;
         this.budget = budget;
         this.tracer = tracer;
+        this.toolCallbacks = toolCallbacks;
+        this.guard = guard;
     }
 
     public String chat(String conversationId, String message) {
@@ -87,9 +95,11 @@ public class AgentService {
         var sample = Timer.start(meterRegistry);
         var startNanos = System.nanoTime();
         try (var scope = span.makeCurrent()) {
+            var filteredTools = toolsForRole(currentRole());
             var response = client.prompt()
                     .user(message)
                     .advisors(a -> a.param("chat_memory_conversation_id", conversationId))
+                    .tools(filteredTools)
                     .call()
                     .content();
             log.debug("← respuesta: conv={}, chars={}", conversationId, response.length());
@@ -174,6 +184,29 @@ public class AgentService {
         } catch (Exception e) {
             return null;
         }
+    }
+
+    private String currentRole() {
+        var auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null) {
+            return null;
+        }
+        for (var ga : auth.getAuthorities()) {
+            var a = ga.getAuthority();
+            if (a != null && a.startsWith("ROLE_")) {
+                return a.substring("ROLE_".length());
+            }
+        }
+        return null;
+    }
+
+    private ToolCallback[] toolsForRole(String role) {
+        if (role == null) {
+            return toolCallbacks;
+        }
+        return java.util.Arrays.stream(toolCallbacks)
+                .filter(tc -> guard.canInvoke(role, tc.getToolDefinition().name()))
+                .toArray(ToolCallback[]::new);
     }
 
     private static String sha256(String raw) {

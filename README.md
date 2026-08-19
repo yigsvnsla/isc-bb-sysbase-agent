@@ -61,6 +61,7 @@ metrics: ai_router_decisions_total{tier}, ai_chat_duration_seconds{tier}
 ## Seguridad y auditoría
 
 - **Auth REST**: JWT HS256 autogenerado (`app.security.jwt.secret` / env `JWT_SECRET`) + API keys (`X-API-Key`, tabla `api_keys`, hash SHA-256, rol, expiración).
+- **OIDC/Keycloak**: fallback a JWKS vía `app.security.oidc.issuer-uri` (env `OIDC_ISSUER_URI`); roles `realm_access.roles` (READONLY/DOC/ADMIN). Dev: `podman compose --profile keycloak up -d keycloak` → `./.container/keycloak/setup.sh` (realm `sysbase`, user `agent-test`/DOC) → `OIDC_ISSUER_URI=http://localhost:8081/realms/sysbase ./mvnw spring-boot:run`.
 - **Roles**: `READONLY` (tools PG lectura + KB), `DOC` (+ `index_procedure`/docs), `ADMIN` (todo). CLI local sin auth (confianza).
 - **CLI**: `token-create --role X [--ttl-min N]`, `apikey-create --name X --role Y [--expire-days N]`, `apikey-list`, `apikey-revoke --id N`.
 - **Auditoría** (tabla `ai_audit`, eventos TURN/TOOL/AUTH): hash+truncado(500) del prompt, hash de respuesta, args completos de tools, decisión del router, latencia, usuario, canal, trace_id por turno.
@@ -117,7 +118,7 @@ Búsqueda: `similaritySearch(topK=12,threshold=0.25)` → <5 hits → fallback I
 |---|---|
 | **Conectividad** | Solo PostgreSQL local (pg_catalog). Sin drivers Sybase/MSSQL/Oracle reales |
 | **Operaciones** | Solo lectura. No ejecuta DDL/DML, no migra datos reales |
-| **Seguridad** | Auth JWT HMAC autogenerado (sin IdP externo) + API keys; RBAC de tools por rol (READONLY/DOC/ADMIN); CORS allowlist configurable |
+| **Seguridad** | Auth JWT HMAC autogenerado + API keys + OIDC/Keycloak (fallback JWKS); RBAC de tools por rol (READONLY/DOC/ADMIN); CORS allowlist configurable |
 | **Formatos** | Solo texto. Sin imágenes/audio. Sin file upload en chat |
 | **Streaming** | Solo OpenAI compat endpoint. V1/V2 son JSON in/out sincrono |
 | **Entrenamiento** | Sin fine-tuning. Modelo+embeddings fijos en runtime |
