@@ -214,6 +214,8 @@ const sidebars = {
         'secuencias/cobis/cobis_ts_telefono_id_seq',
         'secuencias/public/public_api_keys_id_seq',
         'secuencias/public/public_ai_audit_id_seq',
+        'secuencias/public/public_audit_worm_chunks_id_seq',
+        'secuencias/public/public_approval_requests_id_seq',
       ],
     },
     {
@@ -244,6 +246,8 @@ const sidebars = {
         'tablas/public/public_vector_store',
         'tablas/public/public_api_keys',
         'tablas/public/public_ai_audit',
+        'tablas/public/public_audit_worm_chunks',
+        'tablas/public/public_approval_requests',
       ],
     },
   ],
