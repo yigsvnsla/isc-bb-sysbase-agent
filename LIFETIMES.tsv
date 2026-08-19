@@ -1,0 +1,238 @@
+Record/Copybook/Screen	Field Name	COBOL PIC / Type	Angular State Target	Scope & Owner	Binding / Usage
+fd-customer	CUS-ID	PIC X(10)	string	CustomerDTO / CustomerState	Readonly ID / Route param :id
+fd-customer	CUS-ID-TYPE	PIC X(02)	CusIdType ('PF'|'PM'|'GO')	CustomerCreateForm / CustomerDTO	Select / Radio Button control
+fd-customer	CUS-NAME	PIC X(60)	string	CustomerCreateForm / CustomerDTO	Input text (maxlength 60, required)
+fd-customer	CUS-FIRST-LASTNAME	PIC X(30)	string	CustomerCreateForm / CustomerDTO	Input text (maxlength 30)
+fd-customer	CUS-SECOND-LASTNAME	PIC X(30)	string	CustomerCreateForm / CustomerDTO	Input text (maxlength 30)
+fd-customer	CUS-SHORT-NAME	PIC X(40)	string	CustomerDTO / CustomerState	Input text / Card preview label
+fd-customer	CUS-RFC	PIC X(13)	string	CustomerCreateForm / CustomerDTO	Input text (satRfcValidator)
+fd-customer	CUS-CURP	PIC X(18)	string	CustomerCreateForm / CustomerDTO	Input text (curpValidator)
+fd-customer	CUS-REGISTRO-FISCAL	PIC X(20)	string	CustomerCreateForm / CustomerDTO	Input text (moral entity)
+fd-customer	CUS-STRET	PIC X(40)	string	CustomerCreateForm.address	Input text (street)
+fd-customer	CUS-NUM-EXT	PIC X(10)	string	CustomerCreateForm.address	Input text (ext number)
+fd-customer	CUS-NUM-INT	PIC X(10)	string	CustomerCreateForm.address	Input text (int number)
+fd-customer	CUS-COLONIA	PIC X(30)	string	CustomerCreateForm.address	Input text (neighborhood)
+fd-customer	CUS-CIUDAD	PIC X(30)	string	CustomerCreateForm.address	Input text (city)
+fd-customer	CUS-ESTADO	PIC X(20)	string	CustomerCreateForm.address	Input text / Select state
+fd-customer	CUS-PAIS	PIC X(20)	string	CustomerCreateForm.address	Input text (country, default MEX)
+fd-customer	CUS-CP	PIC X(05)	string	CustomerCreateForm.address	Input text (regex ^[0-9]{5}$)
+fd-customer	CUS-TELEFONO1	PIC X(15)	string	CustomerCreateForm.contact	Input text (tel mask)
+fd-customer	CUS-TELEFONO2	PIC X(15)	string	CustomerCreateForm.contact	Input text (tel mask optional)
+fd-customer	CUS-CELULAR	PIC X(15)	string	CustomerCreateForm.contact	Input text (mobile tel mask)
+fd-customer	CUS-EMAIL	PIC X(50)	string	CustomerCreateForm.contact	Input text (Validators.email)
+fd-customer	CUS-EMPRESA	PIC X(40)	string	CustomerCreateForm.employment	Input text (company)
+fd-customer	CUS-PUESTO	PIC X(30)	string	CustomerCreateForm.employment	Input text (job title)
+fd-customer	CUS-INGRESO-MENSUAL	PIC 9(09)V99 COMP-3	number	CustomerCreateForm.employment	Numeric currency input (min 0)
+fd-customer	CUS-SEGMENTO	PIC X(02)	CusSegment ('01'..'05')	CustomerDTO / CustomerState	Badge / Readonly display
+fd-customer	CUS-RIESGO-CATEGORIA	PIC X(01)	CusRiskCategory ('A'|'B'|'C'|'D')	CustomerDTO / CustomerState	Badge / Readonly display
+fd-customer	CUS-STATUS	PIC X(01)	CusStatus ('A'|'I'|'B'|'F')	CustomerDTO / CustomerState	Status tag / Chip
+fd-customer	CUS-FECHA-ALTA	PIC 9(08)	string (YYYYMMDD)	CustomerDTO	Formatted date display (DD/MM/YYYY)
+fd-customer	CUS-FECHA-ULT-MOD	PIC 9(08)	string (YYYYMMDD)	CustomerDTO	Formatted date display
+fd-customer	CUS-FECHA-ULT-OP	PIC 9(08)	string (YYYYMMDD)	CustomerDTO	Formatted date display
+fd-customer	CUS-USUARIO-ALTA	PIC X(08)	string	CustomerDTO	Audit display info
+fd-customer	CUS-USUARIO-ULT-MOD	PIC X(08)	string	CustomerDTO	Audit display info
+fd-customer	CUS-FECHA-NACIMIENTO	PIC 9(08)	string (YYYYMMDD)	CustomerCreateForm	Datepicker / Input cobolDateValidator
+fd-customer	CUS-SEXO	PIC X(01)	CusGender ('M'|'F')	CustomerCreateForm	Radio group / Select
+fd-customer	CUS-NACIONALIDAD	PIC X(03)	string	CustomerCreateForm	Select ISO-3166 code (MEX, USA)
+fd-customer	CUS-ACTIVIDAD-ECONOMICA	PIC X(06)	string	CustomerCreateForm	Select SAT activity code
+fd-account	ACT-NBR	PIC X(10)	string	AccountDTO / AccountState	Readonly ID / Route param :id
+fd-account	ACT-TYPE	PIC X(02)	ActType ('CH'|'AH'|'NO'|'IN')	AccountOpenForm / AccountDTO	Select account type
+fd-account	ACT-CURRENCY	PIC X(03)	CurrencyCode ('MXN'|'USD'|'EUR')	AccountOpenForm / AccountDTO	Select currency
+fd-account	ACT-BALANCE	PIC S9(13)V99 COMP-3	number	AccountDTO / AccountState	Currency pipe display
+fd-account	ACT-BALANCE-DISPONIBLE	PIC S9(13)V99 COMP-3	number	AccountDTO / AccountState	Currency pipe display (balance - hold)
+fd-account	ACT-BALANCE-RETENIDO	PIC S9(13)V99 COMP-3	number	AccountDTO / AccountState	Currency pipe display
+fd-account	ACT-BALANCE-SOBREGIRO	PIC S9(13)V99 COMP-3	number	AccountDTO / AccountState	Currency pipe display
+fd-account	ACT-BALANCE-PROMEDIO	PIC S9(13)V99 COMP-3	number	AccountDTO / AccountState	Currency pipe display
+fd-account	ACT-BALANCE-ANTERIOR	PIC S9(13)V99 COMP-3	number	AccountDTO / AccountState	Currency pipe display
+fd-account	ACT-OVERDRAFT-LIMIT	PIC S9(09)V99 COMP-3	number	AccountDTO / AccountConfigForm	Currency input / display
+fd-account	ACT-OVERDRAFT-RATE	PIC 9(03)V9(04) COMP-3	number	AccountDTO / AccountConfigForm	Percentage display (percent pipe)
+fd-account	ACT-INTEREST-RATE	PIC 9(03)V9(04) COMP-3	number	AccountDTO / AccountConfigForm	Percentage display
+fd-account	ACT-INTEREST-ACCRUED	PIC S9(09)V99 COMP-3	number	AccountDTO / AccountState	Currency pipe display
+fd-account	ACT-MONTHLY-FEE	PIC 9(07)V99 COMP-3	number	AccountDTO / AccountConfigForm	Currency pipe display
+fd-account	ACT-DATE-OPEN	PIC 9(08)	string (YYYYMMDD)	AccountDTO	Formatted date display
+fd-account	ACT-DATE-CLOSE	PIC 9(08)	string (YYYYMMDD)	AccountDTO	Formatted date display (if closed)
+fd-account	ACT-DATE-LAST-ACTIVITY	PIC 9(08)	string (YYYYMMDD)	AccountDTO	Formatted date display
+fd-account	ACT-DATE-LAST-INT-CALC	PIC 9(08)	string (YYYYMMDD)	AccountDTO	Formatted date display
+fd-account	ACT-DATE-LAST-STATEMENT	PIC 9(08)	string (YYYYMMDD)	AccountDTO	Formatted date display
+fd-account	ACT-STATUS	PIC X(01)	ActStatus ('A'|'I'|'C'|'F'|'D')	AccountDTO / AccountState	Status chip / Badge
+fd-account	ACT-BRANCH-OPEN	PIC X(04)	string	AccountDTO / AccountOpenForm	Branch display / Select
+fd-account	ACT-OFFICER	PIC X(08)	string	AccountDTO / AccountOpenForm	Officer ID display
+fd-account	ACT-USER-LAST-MOD	PIC X(08)	string	AccountDTO	Audit display info
+fd-account	ACT-TXN-COUNT-TODAY	PIC 9(06)	number	AccountDTO	Counter badge
+fd-account	ACT-TXN-COUNT-MONTH	PIC 9(06)	number	AccountDTO	Counter badge
+fd-account	ACT-CHECKS-ISSUED	PIC 9(06)	number	AccountDTO	Counter badge
+fd-account	ACT-CHECKS-BOUNCED	PIC 9(06)	number	AccountDTO	Warning counter badge
+fd-account	ACT-CHQBOOK-NBR	PIC X(10)	string	AccountDTO / CheckbookState	Checkbook ID display
+fd-account	ACT-CHQ-NEXT	PIC 9(07)	number	AccountDTO / CheckbookState	Next check number display
+fd-account	ACT-CHQ-LAST-USED	PIC 9(07)	number	AccountDTO / CheckbookState	Last check used display
+fd-account	ACT-CHQ-STOP-COUNT	PIC 9(03)	number	AccountDTO / CheckbookState	Stopped checks counter
+fd-tranlog	TRN-SEQ	PIC 9(10)	string	TransactionDTO / TranlogState	Unique transaction ID / Row key
+fd-tranlog	TRN-DATE	PIC 9(08)	string (YYYYMMDD)	TransactionDTO	Formatted date column
+fd-tranlog	TRN-TIME	PIC 9(06)	string (HHMMSS)	TransactionDTO	Formatted time column
+fd-tranlog	TRN-TYPE	PIC X(03)	TrnType ('DEP'|'RET'|'TRF'|...)	TransactionDTO	Transaction type badge
+fd-tranlog	TRN-ACCOUNT-NBR	PIC X(10)	string	TransactionDTO / TellerForm	Source account input / display
+fd-tranlog	TRN-ACCOUNT-DEST	PIC X(10)	string	TransactionDTO / TellerForm	Destination account input / display
+fd-tranlog	TRN-CUSTOMER-ID	PIC X(10)	string	TransactionDTO	Customer ID link
+fd-tranlog	TRN-AMOUNT	PIC S9(13)V99 COMP-3	number	TransactionDTO / TellerForm	Amount currency input / display
+fd-tranlog	TRN-AMOUNT-TAX	PIC S9(09)V99 COMP-3	number	TransactionDTO	Tax currency display
+fd-tranlog	TRN-AMOUNT-TOTAL	PIC S9(13)V99 COMP-3	number	TransactionDTO	Total amount currency display
+fd-tranlog	TRN-AMOUNT-ORIGINAL	PIC S9(13)V99 COMP-3	number	TransactionDTO	Original amount for reversals
+fd-tranlog	TRN-FEE-AMOUNT	PIC S9(07)V99 COMP-3	number	TransactionDTO	Fee currency display
+fd-tranlog	TRN-FEE-CODE	PIC X(04)	string	TransactionDTO	Fee category code
+fd-tranlog	TRN-BRANCH	PIC X(04)	string	TransactionDTO / SessionContext	Branch code from session
+fd-tranlog	TRN-TELLER-ID	PIC X(08)	string	TransactionDTO / SessionContext	Teller user ID from session
+fd-tranlog	TRN-USER-ID	PIC X(08)	string	TransactionDTO / SessionContext	Authorizing user ID
+fd-tranlog	TRN-TERMINAL	PIC X(08)	string	TransactionDTO / SessionContext	Terminal ID from session
+fd-tranlog	TRN-CHANNEL	PIC X(02)	TrnChannel ('01'..'04')	TransactionDTO	Channel badge (Ventanilla/Web/ATM)
+fd-tranlog	TRN-REFERENCE	PIC X(20)	string	TransactionDTO / TellerForm	Input reference text
+fd-tranlog	TRN-CHQ-NBR	PIC 9(10)	string	TransactionDTO / TellerForm	Check number input (if check)
+fd-tranlog	TRN-CHQ-BANK	PIC X(10)	string	TransactionDTO / TellerForm	Check issuing bank input
+fd-tranlog	TRN-CHQ-ACCOUNT	PIC X(10)	string	TransactionDTO / TellerForm	Check issuing account input
+fd-tranlog	TRN-STATUS	PIC X(01)	TrnStatus ('P'|'C'|'R'|'V')	TransactionDTO	Transaction status tag
+fd-tranlog	TRN-REVERSE-SEQ	PIC 9(10)	string	TransactionDTO	Reversal sequence link
+fd-tranlog	TRN-DESCRIPTION	PIC X(30)	string	TransactionDTO / TellerForm	Transaction narration / memo
+fd-loanmast	LON-NBR	PIC X(10)	string	LoanDTO / LoanState	Loan ID / Route param :id
+fd-loanmast	LON-APPL-ID	PIC X(10)	string	LoanDTO	Application reference ID
+fd-loanmast	LON-CUSTOMER-ID	PIC X(10)	string	LoanDTO	Customer ID link
+fd-loanmast	LON-TYPE	PIC X(02)	LoanType ('PL'|'HI'|'AU'|'CO'|'PR'|'RE')	LoanDTO	Loan type badge
+fd-loanmast	LON-PRODUCT-CODE	PIC X(04)	string	LoanDTO	Product catalog code
+fd-loanmast	LON-AMOUNT-APPROVED	PIC 9(13)V99 COMP-3	number	LoanDTO	Approved amount currency display
+fd-loanmast	LON-AMOUNT-DISBURSED	PIC 9(13)V99 COMP-3	number	LoanDTO	Disbursed amount currency display
+fd-loanmast	LON-BALANCE	PIC 9(13)V99 COMP-3	number	LoanDTO / LoanState	Current loan balance display
+fd-loanmast	LON-BALANCE-PAST-DUE	PIC 9(13)V99 COMP-3	number	LoanDTO / LoanState	Overdue balance display (warning)
+fd-loanmast	LON-AMOUNT-INTEREST	PIC 9(13)V99 COMP-3	number	LoanDTO	Accrued interest currency display
+fd-loanmast	LON-AMOUNT-PENALTY	PIC 9(09)V99 COMP-3	number	LoanDTO	Penalty fees currency display
+fd-loanmast	LON-MINIMUM-PAYMENT	PIC 9(09)V99 COMP-3	number	LoanDTO	Current installment due display
+fd-loanmast	LON-INTEREST-RATE	PIC 9(03)V9(04) COMP-3	number	LoanDTO	Interest rate percent display
+fd-loanmast	LON-INTEREST-LATE	PIC 9(03)V9(04) COMP-3	number	LoanDTO	Late interest rate percent
+fd-loanmast	LON-INTEREST-MORA	PIC 9(03)V9(04) COMP-3	number	LoanDTO	Default interest rate percent
+fd-loanmast	LON-COMISION-APERTURA	PIC 9(07)V99 COMP-3	number	LoanDTO	Origination fee display
+fd-loanmast	LON-TERM-MONTHS	PIC 9(04)	number	LoanDTO	Term in months display
+fd-loanmast	LON-TERM-DAYS	PIC 9(04)	number	LoanDTO	Term in days display
+fd-loanmast	LON-FREQUENCY	PIC X(01)	LoanFreq ('S'|'Q'|'M'|'B'|'T')	LoanDTO	Payment frequency display
+fd-loanmast	LON-PAYMENTS-TOTAL	PIC 9(04)	number	LoanDTO	Total installments count
+fd-loanmast	LON-PAYMENTS-MADE	PIC 9(04)	number	LoanDTO	Paid installments count
+fd-loanmast	LON-PAYMENTS-OVERDUE	PIC 9(04)	number	LoanDTO	Overdue installments count
+fd-loanmast	LON-AMORT-TYPE	PIC X(01)	AmortType ('F'|'A'|'M'|'C')	LoanDTO	Amortization system badge
+fd-loanmast	LON-INSTALLMENT-AMOUNT	PIC 9(09)V99 COMP-3	number	LoanDTO	Periodic installment amount
+fd-loanmast	LON-INSTALLMENT-DUE-DAY	PIC 9(02)	number	LoanDTO	Due day of month (1-31)
+fd-loanmast	LON-DATE-APPROVAL	PIC 9(08)	string (YYYYMMDD)	LoanDTO	Approval date display
+fd-loanmast	LON-DATE-DISBURSEMENT	PIC 9(08)	string (YYYYMMDD)	LoanDTO	Disbursement date display
+fd-loanmast	LON-DATE-FIRST-PAYMENT	PIC 9(08)	string (YYYYMMDD)	LoanDTO	First due date display
+fd-loanmast	LON-DATE-LAST-PAYMENT	PIC 9(08)	string (YYYYMMDD)	LoanDTO	Last payment received date
+fd-loanmast	LON-DATE-MATURITY	PIC 9(08)	string (YYYYMMDD)	LoanDTO	Maturity date display
+fd-loanmast	LON-ACCOUNT-DEBIT	PIC X(10)	string	LoanDTO	Auto-debit account link
+fd-loanmast	LON-ACCOUNT-DISBURSEMENT	PIC X(10)	string	LoanDTO	Disbursement target account link
+fd-loanmast	LON-INSTALLMENT-TABLE	OCCURS 360	LoanInstallmentDTO[]	LoanAmortizationState	Array for @for table rendering
+fd-loanmast	LON-STATUS	PIC X(01)	LoanStatus ('A'|'P'|'C'|'R'|'L')	LoanDTO / LoanState	Loan status badge
+fd-loanmast	LON-CLASSIFICATION	PIC X(01)	LoanClass ('1'|'2'|'3'|'4')	LoanDTO	CNBV Risk category (1=Normal..4=Loss)
+fd-card	CRD-NBR	PIC X(16)	string	CardDTO / CardState	Masked PAN '**** **** **** 1234'
+fd-card	CRD-EMBOSSED-NAME	PIC X(30)	string	CardDTO	Embossed cardholder name
+fd-card	CRD-TYPE	PIC X(02)	CardType ('DB'|'CR'|'PP'|'CO')	CardDTO	Card type badge
+fd-card	CRD-PRODUCT	PIC X(04)	CardProduct ('CLAS'|'GOLD'|'PLAT'|'BLCK')	CardDTO	Product tier badge / Styling
+fd-card	CRD-CUSTOMER-ID	PIC X(10)	string	CardDTO	Customer ID link
+fd-card	CRD-ACCOUNT-NBR	PIC X(10)	string	CardDTO	Linked account ID
+fd-card	CRD-DATE-ISSUE	PIC 9(08)	string (YYYYMMDD)	CardDTO	Issue date display
+fd-card	CRD-DATE-EXPIRY	PIC 9(08)	string (YYYYMMDD)	CardDTO	Expiry date 'MM/YY' display
+fd-card	CRD-LIMIT-CASH	PIC 9(09)V99 COMP-3	number	CardDTO / CardLimitsForm	ATM cash limit input / display
+fd-card	CRD-LIMIT-PURCHASE	PIC 9(09)V99 COMP-3	number	CardDTO / CardLimitsForm	POS purchase limit input / display
+fd-card	CRD-BALANCE-CURRENT	PIC S9(09)V99 COMP-3	number	CardDTO (credit)	Current credit balance
+fd-card	CRD-BALANCE-AVAILABLE	PIC S9(09)V99 COMP-3	number	CardDTO (credit)	Available credit line
+fd-card	CRD-BALANCE-PAST-DUE	PIC S9(09)V99 COMP-3	number	CardDTO (credit)	Past due credit balance
+fd-card	CRD-MINIMUM-PAYMENT	PIC S9(09)V99 COMP-3	number	CardDTO (credit)	Minimum payment required
+fd-card	CRD-PIN-TRIES	PIC 9(02)	number	CardDTO	Failed PIN attempts counter
+fd-card	CRD-PIN-BLOCKED	PIC X(01)	boolean (USR-PWD-BLOCKED)	CardDTO / CardState	PIN blocked flag indicator
+fd-card	CRD-STATUS	PIC X(01)	CardStatus ('A'|'I'|'B'|'E'|'S'|'L'|'C')	CardDTO / CardState	Card status chip (Active/Blocked/Stolen)
+fd-card	CRD-CONTACTLESS	PIC X(01)	boolean ('Y'|'N')	CardDTO / CardConfigForm	Toggle switch for NFC
+fd-tellerec	TLR-ID	PIC X(08)	string	TellerSessionDTO / TellerState	Teller User ID display
+fd-tellerec	TLR-DATE	PIC 9(08)	string (YYYYMMDD)	TellerSessionDTO	Operating business date
+fd-tellerec	TLR-BRANCH	PIC X(04)	string	TellerSessionDTO	Branch ID display
+fd-tellerec	TLR-FONDO-INICIAL	PIC 9(09)V99 COMP-3	number	TellerSignonForm / TellerState	Opening cash amount input
+fd-tellerec	TLR-FONDO-ACTUAL	PIC 9(09)V99 COMP-3	number	TellerSessionDTO / TellerState	Live till balance display
+fd-tellerec	TLR-FONDO-CIERRE	PIC 9(09)V99 COMP-3	number	TellerCloseForm / TellerState	Closing count amount input
+fd-tellerec	TLR-LIMITE-EFECTIVO	PIC 9(09)V99 COMP-3	number	TellerSessionDTO	Cash ceiling limit (warning trigger)
+fd-tellerec	TLR-TOTAL-DEPOSITOS	PIC 9(09)V99 COMP-3	number	TellerSessionDTO	Accumulated deposits amount
+fd-tellerec	TLR-TOTAL-RETIROS	PIC 9(09)V99 COMP-3	number	TellerSessionDTO	Accumulated withdrawals amount
+fd-tellerec	TLR-TOTAL-TRANSFERENCIAS	PIC 9(09)V99 COMP-3	number	TellerSessionDTO	Accumulated transfers amount
+fd-tellerec	TLR-COUNT-TOTAL	PIC 9(05)	number	TellerSessionDTO	Total transactions count today
+fd-tellerec	TLR-STATUS	PIC X(01)	TellerStatus ('O'|'C'|'S')	TellerSessionDTO / TellerState	Till status indicator (Open/Closed)
+fd-tellerec	TLR-DIFERENCIA	PIC S9(09)V99 COMP-3	number	TellerCloseDTO / TellerState	Cash shortage/overage variance
+fd-tellerec	TLR-CUADRADO	PIC X(01)	boolean ('S'|'N')	TellerCloseDTO	Balanced cash drawer indicator
+fd-timedep	TD-NBR	PIC X(12)	string	TimeDepositDTO / TDState	Certificate ID / Route param :id
+fd-timedep	TD-CUSTOMER-ID	PIC X(10)	string	TimeDepositDTO	Customer ID link
+fd-timedep	TD-CERTIFICATE-NBR	PIC X(15)	string	TimeDepositDTO	Paper certificate reference
+fd-timedep	TD-TYPE	PIC X(02)	TimeDepType ('FI'|'RE'|'CA')	TimeDepositOpenForm / TDState	Select CD type (Fixed/Capitalizable)
+fd-timedep	TD-AMOUNT	PIC 9(13)V99 COMP-3	number	TimeDepositOpenForm / TDState	Principal investment amount
+fd-timedep	TD-AMOUNT-INTEREST	PIC 9(13)V99 COMP-3	number	TimeDepositDTO	Total expected interest
+fd-timedep	TD-AMOUNT-TOTAL	PIC 9(13)V99 COMP-3	number	TimeDepositDTO	Maturity value (principal + interest)
+fd-timedep	TD-INTEREST-RATE	PIC 9(03)V9(06) COMP-3	number	TimeDepositOpenForm / TDState	Annual interest rate percent
+fd-timedep	TD-PAYMENT-FREQ	PIC X(01)	TDFreq ('M'|'T'|'S'|'V')	TimeDepositOpenForm	Interest payment frequency
+fd-timedep	TD-TERM-DAYS	PIC 9(04)	number	TimeDepositOpenForm	Investment term in days
+fd-timedep	TD-DATE-ISSUE	PIC 9(08)	string (YYYYMMDD)	TimeDepositDTO	Issue date display
+fd-timedep	TD-DATE-MATURITY	PIC 9(08)	string (YYYYMMDD)	TimeDepositDTO	Maturity date display
+fd-timedep	TD-STATUS	PIC X(01)	TDStatus ('A'|'M'|'C'|'R'|'E')	TimeDepositDTO / TDState	CD status tag (Active/Matured/Closed)
+fd-timedep	TD-ACCOUNT-DEST	PIC X(10)	string	TimeDepositOpenForm	Target account for settlement
+fd-userprof	USR-ID	PIC X(08)	string	UserProfileDTO / AuthState	Logged in user ID / Form control
+fd-userprof	USR-NAME	PIC X(40)	string	UserProfileDTO	User full name display
+fd-userprof	USR-PASSWORD	PIC X(20)	string	LoginForm / ChangePasswordForm	Password input (type="password", SECURE)
+fd-userprof	USR-PASSWORD-EXP-DATE	PIC 9(08)	string (YYYYMMDD)	UserProfileDTO / AuthState	Password expiration date checker
+fd-userprof	USR-PASSWORD-TRIES	PIC 9(02)	number	AuthState	Failed attempts counter
+fd-userprof	USR-PASSWORD-BLOCKED	PIC X(01)	boolean ('Y'|'N')	UserProfileDTO / AuthState	User blocked alert banner
+fd-userprof	USR-ROLE	PIC X(03)	UserRole ('ADM'|'GER'|'SUP'|'CAJ'|'OFI'|'AUD'|'CON')	UserProfileDTO / AuthState	Role-based navigation & permissions
+fd-userprof	USR-BRANCH	PIC X(04)	string	UserProfileDTO / SessionContext	Assigned branch code
+fd-userprof	USR-STATUS	PIC X(01)	UserStatus ('A'|'I'|'S'|'T')	UserProfileDTO	Account status badge
+fd-loanappl	LAP-APPL-ID	PIC X(10)	string	LoanApplicationDTO / LoanApplState	Application ID / Route param :id
+fd-loanappl	LAP-CUSTOMER-ID	PIC X(10)	string	LoanApplicationForm	Customer ID input + search button
+fd-loanappl	LAP-TYPE	PIC X(02)	LoanType ('PL'|'HI'|'AU'|'CO')	LoanApplicationForm	Loan product selector
+fd-loanappl	LAP-AMOUNT-REQUESTED	PIC 9(13)V99 COMP-3	number	LoanApplicationForm	Requested amount currency input
+fd-loanappl	LAP-TERM-MONTHS	PIC 9(04)	number	LoanApplicationForm	Term in months input
+fd-loanappl	LAP-SCORE	PIC 9(03)	number	LoanApplicationDTO / LoanApplState	Computed scoring display (badge)
+fd-loanappl	LAP-SCORE-RIESGO	PIC X(01)	RiskLevel ('B'|'M'|'A')	LoanApplicationDTO	Risk level indicator (Low/Med/High)
+fd-loanappl	LAP-INGRESO-MENSUAL	PIC 9(09)V99 COMP-3	number	LoanApplicationForm	Applicant income currency input
+fd-loanappl	LAP-EGRESOS-MENSUALES	PIC 9(09)V99 COMP-3	number	LoanApplicationForm	Applicant expenses currency input
+fd-loanappl	LAP-STATUS	PIC X(01)	LoanApplStatus ('B'|'R'|'A'|'Z'|'C'|'D')	LoanApplicationDTO / State	Application status tag
+fd-depmast	DEP-NBR	PIC X(10)	string	DepositAccountDTO / DepState	Deposit account ID
+fd-depmast	DEP-BALANCE	PIC 9(13)V99 COMP-3	number	DepositAccountDTO	Deposit balance display
+fd-branch	BRH-CODE	PIC X(04)	string	BranchDTO / SessionContext	Branch code selector
+fd-branch	BRH-NAME	PIC X(40)	string	BranchDTO	Branch name display
+fd-branch	BRH-BALANCE-CASH	PIC 9(11)V99 COMP-3	number	BranchDTO	Branch vault cash balance
+fd-accountxr	AXR-ID	PIC X(20)	string	AccountCrossRefDTO	Composite key (CUS-ID + ACT-NBR)
+fd-accountxr	AXR-ROL	PIC X(02)	CustomerAccountRole ('TI'|'CO'|'BE'|'AU'|'FI'|'GA')	AccountCrossRefDTO	Role tag (Titular/Cotitular/Beneficiario)
+fd-accountxr	AXR-PORCENTAJE	PIC 9(03)V99 COMP-3	number	AccountCrossRefDTO	Ownership / Beneficiary percentage
+fd-chqbook	CHQ-NBR	PIC X(10)	string	CheckbookDTO	Checkbook serial identifier
+fd-chqbook	CHQ-FROM	PIC 9(07)	number	CheckbookDTO	Starting check serial
+fd-chqbook	CHQ-TO	PIC 9(07)	number	CheckbookDTO	Ending check serial
+fd-auditlog	AUD-SEQ	PIC 9(10)	string	AuditRecordDTO	Audit sequence ID
+fd-auditlog	AUD-EVENTO	PIC X(02)	AuditEvent ('AL'|'BA'|'CA'|'CO'|'IM'|'RE'|'AU'|'CI'|'BL')	AuditRecordDTO	Event type badge
+fd-auditlog	AUD-ENTITY-TYPE	PIC X(02)	AuditEntity ('CL'|'CT'|'PR'|'TJ'|'US'|'PA'|'TA'|'SU'|'TR')	AuditRecordDTO	Entity affected tag
+fd-security	SEC-SEQ	PIC 9(10)	string	SecurityLogDTO	Security log sequence
+fd-security	SEC-EVENT-TYPE	PIC X(02)	SecEvent ('LI'|'LO'|'FA'|'LC'|'PC'|'PR'|'TO'|'UA'|'AD')	SecurityLogDTO	Security event type
+fd-feeschd	FEE-CODIGO	PIC X(04)	string	FeeScheduleDTO	Fee code selector
+fd-feeschd	FEE-AMOUNT-FIJO	PIC 9(07)V99 COMP-3	number	FeeScheduleDTO	Fixed fee currency amount
+fd-glmaster	GL-ACCOUNT	PIC X(08)	string	GLAccountDTO	General ledger account number
+fd-glmaster	GL-BALANCE-CURRENT	PIC S9(13)V99 COMP-3	number	GLAccountDTO	GL balance currency display
+fd-paramstr	PAR-CODIGO	PIC X(08)	string	SystemParameterDTO	Parameter code key
+fd-paramstr	PAR-VALOR-TEXTO	PIC X(40)	string	SystemParameterDTO	Parameter string value
+fd-ratefile	RAT-CODIGO	PIC X(06)	string	InterestRateDTO	Rate catalog code
+fd-ratefile	RAT-TASA-ANUAL	PIC 9(03)V9(06) COMP-3	number	InterestRateDTO	Annual rate percentage
+fd-batchctl	BCH-FECHA-PROCESO	PIC 9(08)	string (YYYYMMDD)	BatchControlDTO	Batch process run date
+fd-currency	CUR-CODIGO	PIC X(03)	string	CurrencyDTO	Currency ISO code (MXN/USD/EUR)
+fd-currency	CUR-EXCHANGE-RATE-SELL	PIC 9(07)V9(06) COMP-3	number	CurrencyDTO	Exchange rate sell price
+fd-messages	MSG-ID	PIC 9(08)	string	NotificationMessageDTO	Message ID
+fd-messages	MSG-SUBJECT	PIC X(40)	string	NotificationMessageDTO	Notification subject
+fd-messages	MSG-BODY	PIC X(150)	string	NotificationMessageDTO	Notification text body
+cpy-screen	SC-HDR-FECHA	PIC 9(08)	Signal<string>	GlobalHeaderComponent	Live business date header
+cpy-screen	SC-HDR-HORA	PIC 9(06)	Signal<string>	GlobalHeaderComponent	Live clock header
+cpy-screen	SC-HDR-USUARIO	PIC X(08)	Signal<string>	GlobalHeaderComponent	Current authenticated user
+cpy-screen	SC-HDR-SUCURSAL	PIC X(04)	Signal<string>	GlobalHeaderComponent	Current active branch
+cpy-screen	SC-PF-STATUS	PIC X(79)	PfButtonConfig[]	PfActionBarComponent	Bottom action toolbar buttons
+cpy-screen	SC-MSG-ERROR	PIC X(60)	Signal<string>	ScreenState / ToastService	Error banner / Toast notification
+cpy-common	WS-RETURN-CODE	PIC 99	number (00..99)	ApiResponse<T>	Backend response return code
+cpy-error	WS-ERROR-INFO	Group	ApiErrorDetail	GlobalErrorHandler	HTTP Interceptor error mapping
+SCR-LOGIN	WS-USUARIO	PIC X(08)	FormControl<string>	LoginComponent	Username input field
+SCR-LOGIN	WS-CONTRASENA	PIC X(20)	FormControl<string>	LoginComponent	Password input field (SECURE)
+SCR-CAMBIO-PWD	WS-CONTRASENA-NUEVA	PIC X(20)	FormControl<string>	ChangePasswordComponent	New password input
+SCR-ALTA	CUS-NAME	PIC X(60)	FormControl<string>	CustomerCreateComponent	Customer full name input
+SCR-DEPOSITO	WS-ACCOUNT-NBR	PIC X(10)	FormControl<string>	TellerDepositComponent	Deposit account input
+SCR-DEPOSITO	WS-MONTO-DISPLAY	PIC Z(12)9.99	FormControl<number>	TellerDepositComponent	Deposit amount input
+SCR-SOLICITUD	WS-AMOUNT-DISP	PIC Z(12)9.99	FormControl<number>	LoanApplicationComponent	Loan requested amount input
