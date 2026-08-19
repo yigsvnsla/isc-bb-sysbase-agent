@@ -1,0 +1,64 @@
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. LOGINMF.
+       AUTHOR. ISC-FIXTURE.
+
+       ENVIRONMENT DIVISION.
+       INPUT-OUTPUT SECTION.
+       FILE-CONTROL.
+           SELECT USER-DB ASSIGN TO "users.dat"
+               ORGANIZATION IS INDEXED
+               ACCESS MODE IS DYNAMIC
+               RECORD KEY IS DB-USER-ID
+               FILE STATUS IS WS-FILE-STATUS.
+
+       DATA DIVISION.
+       FILE SECTION.
+       FD  USER-DB.
+       01  DB-USER-RECORD.
+           05  DB-USER-ID        PIC X(08).
+           05  DB-USER-NAME      PIC X(30).
+           05  DB-USER-BALANCE   PIC 9(07)V99.
+           05  DB-USER-STATUS    PIC X(01).
+
+       WORKING-STORAGE SECTION.
+       01  WS-VARIABLES.
+           05  WS-USER-ID        PIC X(08) VALUE SPACES.
+           05  WS-PASSWORD       PIC X(12) VALUE SPACES.
+           05  WS-MESSAGE        PIC X(50) VALUE SPACES.
+           05  WS-FILE-STATUS    PIC X(02) VALUE "00".
+           05  WS-ATTEMPTS       PIC 9(02) VALUE ZEROS.
+           05  WS-NEW-BALANCE    PIC 9(07)V99 VALUE ZEROS.
+
+       SCREEN SECTION.
+       01  LOGIN-SCREEN.
+           05  BLANK SCREEN.
+           05  LINE 02 COLUMN 30 VALUE "SISTEMA BANCARIO ISC".
+           05  LINE 04 COLUMN 10 VALUE "USUARIO:".
+           05  LINE 04 COLUMN 25 PIC X(08) USING WS-USER-ID
+               AUTO REQUIRED.
+           05  LINE 06 COLUMN 10 VALUE "CLAVE:".
+           05  LINE 06 COLUMN 25 PIC X(12) USING WS-PASSWORD
+               SECURE REQUIRED.
+           05  LINE 08 COLUMN 10 PIC X(50) FROM WS-MESSAGE.
+
+       PROCEDURE DIVISION.
+       MAIN-PARA.
+           OPEN I-O USER-DB.
+           PERFORM UNTIL WS-ATTEMPTS > 3
+               DISPLAY LOGIN-SCREEN
+               ACCEPT LOGIN-SCREEN
+               PERFORM VALIDATE-USER
+           END-PERFORM.
+           CLOSE USER-DB.
+           STOP RUN.
+
+       VALIDATE-USER.
+           MOVE WS-USER-ID TO DB-USER-ID.
+           READ USER-DB
+               INVALID KEY
+                   MOVE "USUARIO NO EXISTE" TO WS-MESSAGE
+                   ADD 1 TO WS-ATTEMPTS
+               NOT INVALID KEY
+                   COMPUTE WS-NEW-BALANCE = DB-USER-BALANCE * 1.05
+                   MOVE "ACCESO CONCEDIDO" TO WS-MESSAGE
+           END-READ.

@@ -1,0 +1,225 @@
+@startuml
+!theme plain
+skinparam packageStyle rectangle
+skinparam backgroundColor #FEFEFE
+skinparam defaultFontName Courier
+
+title "Diagrama de Componentes - Sistema Bancario COBOL"
+legend right
+  <b>Leyenda</b>
+  [*]  = Paquete de programas
+  ()  = Sistema externo simulado
+  --> = Dependencia
+endlegend
+
+package "Security" as SEC {
+  [SECSGN00 - Login]
+  [SECSGO00 - SignOff]
+  [SECMNU00 - Menu Seguridad]
+  [SECUSR00 - User Maint]
+  [SECPWD00 - Password Chg]
+  [SECAUD00 - Audit Sessions]
+}
+
+package "Common" as COM {
+  [COMMENU - Menu Principal]
+  [COMDATE - Fechas]
+  [COMHELP - Ayuda]
+  [COMSCRN - Pantalla]
+  [COMERRF - Errores]
+  [COMPFKF - PFKeys]
+  [COMSECF - Seguridad]
+  [COMMSGF - Mensajes]
+  [COMVALF - Validacion]
+  [COMUTIL - Utilidades]
+}
+
+package "Customer" as CUS {
+  [CUSMNU00 - Menu Clientes]
+  [CUSSRH00 - Busqueda]
+  [CUSINQ00 - Consulta]
+  [CUSMNT00 - Alta]
+  [CUSUPD00 - Modificacion]
+  [CUSADR00 - Direcciones]
+  [CUSREL00 - Relaciones]
+  [CUSSTS00 - Estatus]
+}
+
+package "Account" as ACT {
+  [ACTMNU00 - Menu Cuentas]
+  [ACTINQ00 - Consulta]
+  [ACTOPN00 - Apertura]
+  [ACTUPD00 - Modificacion]
+  [ACTCLS00 - Cierre]
+  [ACTFRZ00 - Congelar]
+  [ACTBAL00 - Saldo]
+  [ACTSTM00 - Estado Cta]
+}
+
+package "Teller" as TLR {
+  [TLRMNU00 - Menu Caja]
+  [TLRSGN00 - Apertura Caja]
+  [TLRDEP00 - Deposito]
+  [TLRWTH00 - Retiro]
+  [TLRTRF00 - Transferencia]
+  [TLRPYM00 - Pago Servicios]
+  [TLRCHE00 - Cobro Cheque]
+  [TLRSMG00 - Resumen/Cierre]
+}
+
+package "Loans" as LON {
+  [LONMNU00 - Menu Prestamos]
+  [LONINQ00 - Consulta]
+  [LONAPL00 - Solicitud]
+  [LONAPV00 - Aprobacion]
+  [LONDIS00 - Desembolso]
+  [LONPYM00 - Pago]
+  [LONAMR00 - Amortizacion]
+  [LONDEL00 - Mora/Castigo]
+}
+
+package "Deposits" as DEP {
+  [DEPMNU00 - Menu Depositos]
+  [DEPINQ00 - Consulta]
+  [DEPOPN00 - Apertura]
+  [DEPINT00 - Tasas]
+  [DEPWTH00 - Retiros]
+  [DEPSTM00 - Estado]
+  [DEPREN00 - Renovacion]
+}
+
+package "TimeDep" as TD {
+  [TDMNU000 - Menu Plazo]
+  [TDOPN000 - Apertura CD]
+  [TDINQ000 - Consulta CD]
+  [TDCLS000 - Liquidacion]
+  [TDINT000 - Interes CD]
+}
+
+package "Transfers" as FTR {
+  [FTMNU000 - Menu Transf]
+  [FTINT000 - Interna]
+  [FTWIR000 - Wire/SWIFT]
+  [FTACH000 - ACH]
+  [FTSTS000 - Estado]
+}
+
+package "Batch" as BCH {
+  [BCHMNU00 - Menu Batch]
+  [BCHDAY00 - Cierre Diario]
+  [BCHMTH00 - Cierre Mensual]
+  [BCHINT00 - Intereses]
+  [BCHGLI00 - GL Interface]
+  [BCHODO00 - Sobregiro]
+  [BCHFEE00 - Comisiones]
+}
+
+package "Reports" as RPT {
+  [RPTMNU00 - Menu Reportes]
+  [RPTBAL00 - Balance]
+  [RPTTXN00 - Transacciones]
+  [RPTDEL00 - Cartera Vencida]
+  [RPTTLR00 - Cuadre Caja]
+  [RPTGLB00 - Trial Balance]
+  [RPTREG00 - Regulatorios]
+}
+
+package "Audit" as AUD {
+  [AUDTRL00 - Escribir Audit]
+  [AUDINQ00 - Consultar Audit]
+}
+
+package "Data Files" as FILES {
+  (CUSTOMER)
+  (ACCOUNT)
+  (TRANLOG)
+  (CARD)
+  (LOANMAST)
+  (LOANAPPL)
+  (USERPROF)
+  (SECURITY)
+  (DEPMAST)
+  (TIMEDEP)
+  (GLMASTER)
+  (AUDITLOG)
+  (BATCHCTL)
+  (RATEFILE)
+  (PARAMSTR)
+  (FEESCHED)
+  (CHQBOOK)
+  (ACCTXREF)
+  (TELLEREC)
+  (BRANCH)
+  (CURRENCY)
+  (MESSAGES)
+}
+
+() "Sistema GL" as GL_EXT
+() "SWIFT" as SWIFT_EXT
+() "ACH Network" as ACH_EXT
+() "SAT" as SAT_EXT
+() "Buro Credito" as BURO_EXT
+
+'--- Dependencias entre paquetes ---
+COMMENU --> SEC : CALL SECSGN00
+COMMENU --> CUS : CALL CUSMNU00
+COMMENU --> ACT : CALL ACTMNU00
+COMMENU --> TLR : CALL TLRMNU00
+COMMENU --> LON : CALL LONMNU00
+COMMENU --> DEP : CALL DEPMNU00
+COMMENU --> TD : CALL TDMNU000
+COMMENU --> FTR : CALL FTMNU000
+COMMENU --> BCH : CALL BCHMNU00
+COMMENU --> RPT : CALL RPTMNU00
+COMMENU --> AUD : CALL AUDTRL00
+
+SEC --> COM : usa COMDATE, COMHELP
+CUS --> COM : usa COMDATE, COMHELP
+CUS --> AUD : CALL AUDTRL00
+ACT --> COM : usa COMDATE
+ACT --> AUD : CALL AUDTRL00
+TLR --> ACT : CALL ACTINQ00, ACTBAL00
+TLR --> COM : usa COMDATE
+TLR --> AUD : CALL AUDTRL00
+LON --> CUS : CALL CUSSRH00
+LON --> TLR : CALL TLRTRF00
+LON --> COM : usa COMDATE
+LON --> AUD : CALL AUDTRL00
+DEP --> CUS : CALL CUSSRH00
+DEP --> COM : usa COMDATE
+DEP --> AUD : CALL AUDTRL00
+TD --> CUS : CALL CUSSRH00
+TD --> ACT : CALL ACTBAL00
+TD --> COM : usa COMDATE
+TD --> AUD : CALL AUDTRL00
+FTR --> ACT : CALL ACTBAL00, ACTUPD00
+FTR --> COM : usa COMDATE
+FTR --> AUD : CALL AUDTRL00
+BCH --> ACT : READ ACCOUNT
+BCH --> RPT : CALL RPTBAL00, RPTTXN00
+BCH --> COM : usa COMDATE
+BCH --> AUD : CALL AUDTRL00
+RPT --> COM : usa COMDATE
+AUD --> COM : usa COMDATE
+
+'--- Acceso a archivos ---
+CUS --> FILES : CUSTOMER, ACCTXREF
+ACT --> FILES : ACCOUNT, ACCTXREF, CHQBOOK
+TLR --> FILES : ACCOUNT, TRANLOG, TELLEREC
+LON --> FILES : LOANMAST, LOANAPPL, RATEFILE
+DEP --> FILES : DEPMAST, RATEFILE
+TD --> FILES : TIMEDEP, RATEFILE, TRANLOG
+FTR --> FILES : ACCOUNT, TRANLOG
+BCH --> FILES : ACCOUNT, TRANLOG, GLMASTER, BATCHCTL, RATEFILE, FEESCHED
+RPT --> FILES : ACCOUNT, TRANLOG, LOANMAST, TELLEREC, GLMASTER
+SEC --> FILES : USERPROF, SECURITY
+AUD --> FILES : AUDITLOG
+
+'--- Sistemas externos ---
+FTR --> SWIFT_EXT : Wire transfers
+FTR --> ACH_EXT : ACH transfers
+BCH --> GL_EXT : GL posting
+RPT --> SAT_EXT : Regulatory reports
+LON --> BURO_EXT : Credit bureau
+
+@enduml

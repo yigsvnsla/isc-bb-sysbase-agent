@@ -1,0 +1,218 @@
+      *================================================================*
+      * CRDLMT00 - ADMINISTRACION DE LIMITES DE TARJETA               *
+      * EQUIPO: SISTEMAS DE TARJETAS - 2006                            *
+      *================================================================*
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. CRDLMT00.
+       ENVIRONMENT DIVISION.
+       CONFIGURATION SECTION.
+       SOURCE-COMPUTER. IBM-PS2.
+       OBJECT-COMPUTER. IBM-PS2.
+       SPECIAL-NAMES.
+           CRT STATUS IS WS-CRT-STATUS.
+       INPUT-OUTPUT SECTION.
+       FILE-CONTROL.
+           SELECT CARD-FILE
+               ASSIGN TO 'CARD.DAT'
+               ORGANIZATION IS INDEXED
+               ACCESS MODE IS DYNAMIC
+               RECORD KEY IS CRD-NBR
+               FILE STATUS IS WS-FILE-STATUS.
+       DATA DIVISION.
+       FILE SECTION.
+       FD  CARD-FILE LABEL RECORDS ARE STANDARD RECORD 250 CHARACTERS.
+       01  CARD-RECORD.
+           05  CRD-NBR                     PIC X(16).
+           05  CRD-EMBOSSED-NAME           PIC X(30).
+           05  CRD-TYPE                    PIC X(02).
+           05  CRD-PRODUCT                 PIC X(04).
+           05  CRD-CUSTOMER-ID             PIC X(10).
+           05  CRD-ACCOUNT-NBR             PIC X(10).
+           05  CRD-BRANCH                  PIC X(04).
+           05  CRD-DATE-ISSUE              PIC 9(08).
+           05  CRD-DATE-EXPIRY             PIC 9(08).
+           05  CRD-DATE-LAST-USED          PIC 9(08).
+           05  CRD-DATE-LAST-PIN-CHG       PIC 9(08).
+           05  CRD-LIMIT-CASH              PIC 9(09)V99 COMP-3.
+           05  CRD-LIMIT-PURCHASE          PIC 9(09)V99 COMP-3.
+           05  CRD-LIMIT-DAILY-CASH        PIC 9(09)V99 COMP-3.
+           05  CRD-LIMIT-DAILY-PURCHASE    PIC 9(09)V99 COMP-3.
+           05  CRD-LIMIT-MONTHLY           PIC 9(09)V99 COMP-3.
+           05  CRD-BALANCE-CURRENT         PIC S9(09)V99 COMP-3.
+           05  CRD-BALANCE-AVAILABLE       PIC S9(09)V99 COMP-3.
+           05  CRD-BALANCE-PAST-DUE        PIC S9(09)V99 COMP-3.
+           05  CRD-MINIMUM-PAYMENT         PIC S9(09)V99 COMP-3.
+           05  CRD-INTEREST-RATE           PIC 9(03)V9(04) COMP-3.
+           05  CRD-CUT-DAY                 PIC 9(02).
+           05  CRD-PAYMENT-DAY             PIC 9(02).
+           05  CRD-PIN-OFFSET              PIC X(06).
+           05  CRD-CVV                     PIC X(04).
+           05  CRD-PIN-TRIES               PIC 9(02).
+           05  CRD-PIN-BLOCKED             PIC X(01).
+           05  CRD-STATUS                  PIC X(01).
+           05  CRD-REASON-LAST-CHANGE      PIC X(40).
+           05  CRD-ISSUE-COUNT             PIC 9(02).
+           05  CRD-ATM-DAILY-COUNT         PIC 9(03).
+           05  CRD-ATM-DAILY-AMOUNT        PIC 9(09)V99 COMP-3.
+           05  CRD-CONTACTLESS             PIC X(01).
+           05  CRD-FILLER                  PIC X(15).
+       WORKING-STORAGE SECTION.
+       01  WS-CRT-STATUS                  PIC 9(04).
+           88  WS-CRT-PF12               VALUE 1012.
+           88  WS-CRT-ENTER              VALUE 0013.
+       01  WS-FILE-STATUS                 PIC X(02).
+           88  FS-OK                      VALUE '00'.
+           88  FS-NOT-FOUND               VALUE '23'.
+       01  WS-VARIABLES.
+           05  WS-USUARIO                 PIC X(08).
+           05  WS-FECHA                   PIC 9(08).
+           05  WS-HORA                    PIC 9(06).
+           05  WS-MENSAJE                 PIC X(60).
+           05  WS-MENSAJE-ERROR           PIC X(60).
+           05  WS-RETCODE                 PIC 99.
+           05  WS-PROGRAMA                PIC X(08) VALUE 'CRDLMT00'.
+           05  WS-CARD-NBR                PIC X(16).
+           05  WS-SUPV-PIN                PIC X(06).
+           05  WS-AUDIT-DATA              PIC X(60).
+           05  WS-NEW-LIMIT-CASH          PIC 9(09)V99 COMP-3.
+           05  WS-NEW-LIMIT-PURCHASE      PIC 9(09)V99 COMP-3.
+           05  WS-NEW-LIMIT-DAILY-CASH    PIC 9(09)V99 COMP-3.
+           05  WS-NEW-LIMIT-DAILY-PURCH   PIC 9(09)V99 COMP-3.
+           05  WS-NEW-LIMIT-MONTHLY       PIC 9(09)V99 COMP-3.
+       SCREEN SECTION.
+       01  SCR-ENTRADA.
+           05  LINE 01  COL 01  PIC X(80)
+               VALUE ' BANCO NACIONAL - LIMITES DE TARJETA'.
+           05  LINE 01  COL 72  PIC X(08) FROM WS-USUARIO.
+           05  LINE 05  COL 05  PIC X(25) VALUE 'NUMERO TARJETA (16):'.
+           05  LINE 05  COL 35  PIC X(16)
+               USING WS-CARD-NBR AUTO PROMPT '________________'.
+           05  LINE 14  COL 05  PIC X(60) FROM WS-MENSAJE.
+           05  LINE 24  COL 02  PIC X(78)
+               VALUE 'ENTER=CONTINUAR  PF12=RETORNAR'.
+       01  SCR-LIMITES.
+           05  LINE 01  COL 01  PIC X(80)
+               VALUE ' BANCO NACIONAL - LIMITES DE TARJETA'.
+           05  LINE 03  COL 02  PIC X(16) FROM WS-CARD-NBR.
+           05  LINE 05  COL 05  PIC X(25) VALUE 'LIMITE EFECTIVO:'.
+           05  LINE 05  COL 35  PIC ZZZZZZZZZ9.99
+               FROM CRD-LIMIT-CASH.
+           05  LINE 05  COL 55  PIC X(10) VALUE 'NUEVO:'.
+           05  LINE 05  COL 65  PIC ZZZZZZZZZ9.99
+               USING WS-NEW-LIMIT-CASH AUTO.
+           05  LINE 06  COL 05  PIC X(25) VALUE 'LIMITE COMPRAS:'.
+           05  LINE 06  COL 35  PIC ZZZZZZZZZ9.99
+               FROM CRD-LIMIT-PURCHASE.
+           05  LINE 06  COL 55  PIC X(10) VALUE 'NUEVO:'.
+           05  LINE 06  COL 65  PIC ZZZZZZZZZ9.99
+               USING WS-NEW-LIMIT-PURCHASE AUTO.
+           05  LINE 07  COL 05  PIC X(30) VALUE 'LIMITE DIARIO EFECTIVO:'.
+           05  LINE 07  COL 40  PIC ZZZZZZZZZ9.99
+               FROM CRD-LIMIT-DAILY-CASH.
+           05  LINE 07  COL 55  PIC X(10) VALUE 'NUEVO:'.
+           05  LINE 07  COL 65  PIC ZZZZZZZZZ9.99
+               USING WS-NEW-LIMIT-DAILY-CASH AUTO.
+           05  LINE 08  COL 05  PIC X(30) VALUE 'LIMITE DIARIO COMPRA:'.
+           05  LINE 08  COL 40  PIC ZZZZZZZZZ9.99
+               FROM CRD-LIMIT-DAILY-PURCHASE.
+           05  LINE 08  COL 55  PIC X(10) VALUE 'NUEVO:'.
+           05  LINE 08  COL 65  PIC ZZZZZZZZZ9.99
+               USING WS-NEW-LIMIT-DAILY-PURCH AUTO.
+           05  LINE 09  COL 05  PIC X(25) VALUE 'LIMITE MENSUAL:'.
+           05  LINE 09  COL 35  PIC ZZZZZZZZZ9.99
+               FROM CRD-LIMIT-MONTHLY.
+           05  LINE 09  COL 55  PIC X(10) VALUE 'NUEVO:'.
+           05  LINE 09  COL 65  PIC ZZZZZZZZZ9.99
+               USING WS-NEW-LIMIT-MONTHLY AUTO.
+           05  LINE 14  COL 05  PIC X(60) FROM WS-MENSAJE.
+           05  LINE 24  COL 02  PIC X(78)
+               VALUE 'ENTER=GUARDAR  PF12=CANCELAR'.
+       01  SCR-SUPV-PIN.
+           05  LINE 01  COL 01  PIC X(80)
+               VALUE ' BANCO NACIONAL - AUTORIZACION SUPERVISOR'.
+           05  LINE 05  COL 05  PIC X(30) VALUE 'INGRESE PIN SUPERVISOR:'.
+           05  LINE 05  COL 40  PIC X(06)
+               USING WS-SUPV-PIN AUTO SECURE PROMPT '______'.
+           05  LINE 14  COL 05  PIC X(60) FROM WS-MENSAJE-ERROR.
+           05  LINE 24  COL 02  PIC X(78)
+               VALUE 'ENTER=VALIDAR  PF12=CANCELAR'.
+       LINKAGE SECTION.
+       01  LS-USUARIO                     PIC X(08).
+       01  LS-RETCODE                     PIC 99.
+       PROCEDURE DIVISION USING LS-USUARIO LS-RETCODE.
+       MAIN.
+           MOVE SPACES TO WS-CARD-NBR WS-MENSAJE WS-MENSAJE-ERROR.
+           MOVE LS-USUARIO TO WS-USUARIO.
+           MOVE 00 TO LS-RETCODE.
+           PERFORM 1000-INICIALIZAR.
+       0100-ENTRADA.
+           PERFORM 2000-PANTALLA-ENTRADA.
+           ACCEPT SCR-ENTRADA.
+           IF WS-CRT-PF12 GO TO 9000-EXIT.
+           IF WS-CARD-NBR = SPACES
+               MOVE 'INGRESE NUMERO DE TARJETA' TO WS-MENSAJE-ERROR
+               GO TO 0100-ENTRADA.
+           OPEN I-O CARD-FILE.
+           IF WS-FILE-STATUS NOT = '00' GOTO 0100-ENTRADA.
+           MOVE WS-CARD-NBR TO CRD-NBR.
+           READ CARD-FILE KEY IS CRD-NBR
+               INVALID KEY CLOSE CARD-FILE
+               MOVE 'TARJETA NO ENCONTRADA' TO WS-MENSAJE-ERROR
+               GO TO 0100-ENTRADA.
+           MOVE CRD-LIMIT-CASH TO WS-NEW-LIMIT-CASH.
+           MOVE CRD-LIMIT-PURCHASE TO WS-NEW-LIMIT-PURCHASE.
+           MOVE CRD-LIMIT-DAILY-CASH TO WS-NEW-LIMIT-DAILY-CASH.
+           MOVE CRD-LIMIT-DAILY-PURCHASE TO WS-NEW-LIMIT-DAILY-PURCH.
+           MOVE CRD-LIMIT-MONTHLY TO WS-NEW-LIMIT-MONTHLY.
+           PERFORM 2100-PANTALLA-LIMITES.
+           ACCEPT SCR-LIMITES.
+           IF WS-CRT-PF12
+               CLOSE CARD-FILE GO TO 0100-ENTRADA.
+           IF WS-NEW-LIMIT-CASH = CRD-LIMIT-CASH
+               AND WS-NEW-LIMIT-PURCHASE = CRD-LIMIT-PURCHASE
+               AND WS-NEW-LIMIT-DAILY-CASH = CRD-LIMIT-DAILY-CASH
+               AND WS-NEW-LIMIT-DAILY-PURCH = CRD-LIMIT-DAILY-PURCHASE
+               AND WS-NEW-LIMIT-MONTHLY = CRD-LIMIT-MONTHLY
+               MOVE 'SIN CAMBIOS' TO WS-MENSAJE
+               CLOSE CARD-FILE GO TO 0100-ENTRADA.
+           MOVE SPACES TO WS-SUPV-PIN.
+           PERFORM 2200-PANTALLA-SUPV.
+           ACCEPT SCR-SUPV-PIN.
+           IF WS-CRT-PF12
+               CLOSE CARD-FILE GO TO 0100-ENTRADA.
+           IF WS-SUPV-PIN NOT = '999999'
+               MOVE 'PIN INCORRECTO' TO WS-MENSAJE-ERROR
+               CLOSE CARD-FILE GO TO 0100-ENTRADA.
+           MOVE WS-NEW-LIMIT-CASH TO CRD-LIMIT-CASH.
+           MOVE WS-NEW-LIMIT-PURCHASE TO CRD-LIMIT-PURCHASE.
+           MOVE WS-NEW-LIMIT-DAILY-CASH TO CRD-LIMIT-DAILY-CASH.
+           MOVE WS-NEW-LIMIT-DAILY-PURCH TO CRD-LIMIT-DAILY-PURCHASE.
+           MOVE WS-NEW-LIMIT-MONTHLY TO CRD-LIMIT-MONTHLY.
+           REWRITE CARD-RECORD.
+           IF WS-FILE-STATUS = '00'
+               MOVE 'LIMITES ACTUALIZADOS' TO WS-MENSAJE
+               STRING 'LIMITES TARJETA ' CRD-NBR
+                 INTO WS-AUDIT-DATA
+               CALL 'AUDTRL00' USING WS-PROGRAMA WS-AUDIT-DATA
+           ELSE
+               MOVE 'ERROR AL GUARDAR' TO WS-MENSAJE-ERROR.
+           CLOSE CARD-FILE.
+           GO TO 0100-ENTRADA.
+       1000-INICIALIZAR.
+           CALL 'COMDATE' USING 'NOW' WS-FECHA WS-HORA.
+           MOVE 'INGRESE TARJETA PARA LIMITES' TO WS-MENSAJE.
+           PERFORM 1100-LIMPIAR.
+       1100-LIMPIAR. DISPLAY SPACES UPON CRT.
+       2000-PANTALLA-ENTRADA.
+           PERFORM 1100-LIMPIAR.
+           DISPLAY SCR-ENTRADA.
+       2100-PANTALLA-LIMITES.
+           PERFORM 1100-LIMPIAR.
+           DISPLAY SCR-LIMITES.
+       2200-PANTALLA-SUPV.
+           PERFORM 1100-LIMPIAR.
+           DISPLAY SCR-SUPV-PIN.
+       9000-EXIT.
+           MOVE 00 TO LS-RETCODE.
+           EXIT PROGRAM.
+       END PROGRAM CRDLMT00.

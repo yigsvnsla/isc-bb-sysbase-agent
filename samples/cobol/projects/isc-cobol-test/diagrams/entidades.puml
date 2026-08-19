@@ -1,0 +1,347 @@
+@startuml
+!theme plain
+skinparam backgroundColor #FEFEFE
+skinparam defaultFontName Courier
+skinparam class {
+  BackgroundColor #F8F8F8
+  BorderColor #333333
+  FontName Courier
+}
+
+title "Diagrama de Entidades - Sistema Bancario COBOL"
+legend right
+  <b>Leyenda</b>
+  1 --{ N  : Uno a muchos
+  *--*    : Muchos a muchos
+  PK      : Primary Key
+endlegend
+
+entity "CUSTOMER" as CUS {
+  * CUS-ID : X(10) [PK]
+  --
+  CUS-ID-TYPE : X(02)
+  CUS-NAME : X(60)
+  CUS-RFC : X(13)
+  CUS-CURP : X(18)
+  CUS-SEGMENTO : X(02)
+  CUS-RIESGO-CATEGORIA : X(01)
+  CUS-STATUS : X(01)
+  CUS-INGRESO-MENSUAL : COMP-3
+  CUS-FECHA-ALTA : 9(08)
+  CUS-FECHA-NACIMIENTO : 9(08)
+  CUS-SEXO : X(01)
+  CUS-ACTIVIDAD-ECONOMICA : X(06)
+  + 28 campos mas
+}
+
+entity "ACCOUNT" as ACT {
+  * ACT-NBR : X(10) [PK]
+  --
+  ACT-TYPE : X(02)
+  ACT-CURRENCY : X(03)
+  ACT-BALANCE : COMP-3
+  ACT-BALANCE-DISPONIBLE : COMP-3
+  ACT-OVERDRAFT-LIMIT : COMP-3
+  ACT-INTEREST-RATE : COMP-3
+  ACT-STATUS : X(01)
+  ACT-DATE-OPEN : 9(08)
+  ACT-DATE-CLOSE : 9(08)
+  ACT-BRANCH-OPEN : X(04)
+  ACT-TXN-COUNT-TODAY : 9(06)
+  ACT-CHQBOOK-NBR : X(10)
+  + 20 campos mas
+}
+
+entity "TRANLOG" as TRN {
+  * TRN-SEQ : 9(10) [PK]
+  --
+  TRN-DATE : 9(08)
+  TRN-TIME : 9(06)
+  TRN-TYPE : X(03)
+  TRN-ACCOUNT-NBR : X(10) [AK]
+  TRN-ACCOUNT-DEST : X(10)
+  TRN-CUSTOMER-ID : X(10)
+  TRN-AMOUNT : COMP-3
+  TRN-STATUS : X(01)
+  TRN-BRANCH : X(04)
+  TRN-TELLER-ID : X(08)
+  TRN-CHANNEL : X(02)
+  TRN-REFERENCE : X(20)
+  TRN-DESCRIPTION : X(30)
+  + 12 campos mas
+}
+
+entity "CARD" as CRD {
+  * CRD-NBR : X(16) [PK]
+  --
+  CRD-TYPE : X(02)
+  CRD-PRODUCT : X(04)
+  CRD-CUSTOMER-ID : X(10)
+  CRD-ACCOUNT-NBR : X(10)
+  CRD-DATE-ISSUE : 9(08)
+  CRD-DATE-EXPIRY : 9(08)
+  CRD-LIMIT-CASH : COMP-3
+  CRD-LIMIT-PURCHASE : COMP-3
+  CRD-BALANCE-CURRENT : COMP-3
+  CRD-PIN-TRIES : 9(02)
+  CRD-PIN-BLOCKED : X(01)
+  CRD-STATUS : X(01)
+  CRD-CONTACTLESS : X(01)
+  + 21 campos mas
+}
+
+entity "LOANMASTER" as LON {
+  * LON-NBR : X(10) [PK]
+  --
+  LON-APPL-ID : X(10)
+  LON-CUSTOMER-ID : X(10)
+  LON-TYPE : X(02)
+  LON-AMOUNT-APPROVED : COMP-3
+  LON-BALANCE : COMP-3
+  LON-INTEREST-RATE : COMP-3
+  LON-TERM-MONTHS : 9(04)
+  LON-AMORT-TYPE : X(01)
+  LON-INSTALLMENT-AMOUNT : COMP-3
+  LON-DATE-MATURITY : 9(08)
+  LON-STATUS : X(01)
+  LON-CLASSIFICATION : X(01)
+  + 36 campos mas
+}
+
+entity "LOANAPPLICATION" as LAP {
+  * LAP-APPL-ID : X(10) [PK]
+  --
+  LAP-CUSTOMER-ID : X(10)
+  LAP-TYPE : X(02)
+  LAP-AMOUNT-REQUESTED : COMP-3
+  LAP-TERM-MONTHS : 9(04)
+  LAP-SCORE : 9(03)
+  LAP-INGRESO-MENSUAL : COMP-3
+  LAP-EGRESOS-MENSUALES : COMP-3
+  LAP-GARANTE-ID : X(10)
+  LAP-STATUS : X(01)
+  LAP-FECHA-SOLICITUD : 9(08)
+  + 16 campos mas
+}
+
+entity "BRANCH" as BRH {
+  * BRH-CODE : X(04) [PK]
+  --
+  BRH-NAME : X(40)
+  BRH-MANAGER : X(08)
+  BRH-BALANCE-CASH : COMP-3
+  BRH-STATUS : X(01)
+  BRH-REGION : X(02)
+  + 21 campos mas
+}
+
+entity "USERPROF" as USR {
+  * USR-ID : X(08) [PK]
+  --
+  USR-NAME : X(40)
+  USR-PASSWORD : X(20)
+  USR-PASSWORD-EXP-DATE : 9(08)
+  USR-ROLE : X(03)
+  USR-BRANCH : X(04)
+  USR-STATUS : X(01)
+  + 19 campos mas
+}
+
+entity "AUDITLOG" as AUD {
+  * AUD-SEQ : 9(10) [PK]
+  --
+  AUD-DATE : 9(08)
+  AUD-USUARIO : X(08)
+  AUD-PROGRAMA : X(08)
+  AUD-EVENTO : X(02)
+  AUD-ENTITY-TYPE : X(02)
+  AUD-ENTITY-KEY : X(20)
+  AUD-CAMPO-ANTERIOR : X(60)
+  AUD-CAMPO-NUEVO : X(60)
+  AUD-RESULTADO : X(01)
+  + 4 campos mas
+}
+
+entity "GLMASTER" as GL {
+  * GL-ACCOUNT : X(08) [PK]
+  --
+  GL-DESCRIPTION : X(40)
+  GL-TYPE : X(01)
+  GL-BALANCE-CURRENT : COMP-3
+  GL-BALANCE-YTD : COMP-3
+  GL-STATUS : X(01)
+  GL-BRANCH : X(04)
+  + 11 campos mas
+}
+
+entity "BATCHCTL" as BCH {
+  * BCH-FECHA-PROCESO : 9(08) [PK]
+  --
+  BCH-ESTADO-GENERAL : X(01)
+  BCH-TRX-PROCESADAS : 9(10)
+  BCH-HORA-INICIO : 9(06)
+  + 14 campos mas
+}
+
+entity "RATEFILE" as RAT {
+  * RAT-CODIGO : X(06) [PK]
+  --
+  RAT-DESCRIPCION : X(35)
+  RAT-TIPO : X(02)
+  RAT-TASA-ANUAL : COMP-3
+  RAT-STATUS : X(01)
+  + 13 campos mas
+}
+
+entity "DEPMAST" as DEP {
+  * DEP-NBR : X(10) [PK]
+  --
+  DEP-CUSTOMER-ID : X(10)
+  DEP-TYPE : X(02)
+  DEP-BALANCE : COMP-3
+  DEP-INTEREST-RATE : COMP-3
+  DEP-DATE-MATURITY : 9(08)
+  DEP-STATUS : X(01)
+  + 16 campos mas
+}
+
+entity "TIMEDEP" as TD {
+  * TD-NBR : X(12) [PK]
+  --
+  TD-CUSTOMER-ID : X(10)
+  TD-AMOUNT : COMP-3
+  TD-INTEREST-RATE : COMP-3
+  TD-DATE-MATURITY : 9(08)
+  TD-STATUS : X(01)
+  + 16 campos mas
+}
+
+entity "ACCTXREF" as AXR {
+  * AXR-ID : X(20) [PK]
+  --
+  AXR-CUSTOMER-ID : X(10)
+  AXR-ACCOUNT-NBR : X(10)
+  AXR-ROL : X(02)
+  AXR-PORCENTAJE : COMP-3
+  AXR-STATUS : X(01)
+  + 4 campos mas
+}
+
+entity "TELLEREC" as TLR {
+  * TLR-ID : X(08) [PK]
+  * TLR-DATE : 9(08) [PK]
+  --
+  TLR-BRANCH : X(04)
+  TLR-FONDO-ACTUAL : COMP-3
+  TLR-LIMITE-EFECTIVO : COMP-3
+  TLR-STATUS : X(01)
+  TLR-DIFERENCIA : COMP-3
+  + 19 campos mas
+}
+
+entity "CHQBOOK" as CHQ {
+  * CHQ-NBR : X(10) [PK]
+  --
+  CHQ-ACCOUNT-NBR : X(10)
+  CHQ-FROM : 9(07)
+  CHQ-TO : 9(07)
+  CHQ-STATUS : X(01)
+  + 9 campos mas
+}
+
+entity "FEESCHED" as FEE {
+  * FEE-CODIGO : X(04) [PK]
+  --
+  FEE-DESCRIPCION : X(35)
+  FEE-TIPO : X(02)
+  FEE-AMOUNT-FIJO : COMP-3
+  FEE-FRECUENCIA : X(01)
+  FEE-STATUS : X(01)
+  + 10 campos mas
+}
+
+entity "PARAMSTR" as PAR {
+  * PAR-CODIGO : X(08) [PK]
+  --
+  PAR-GRUPO : X(10)
+  PAR-VALOR-TEXTO : X(40)
+  PAR-VALOR-NUMERICO : COMP-3
+  PAR-TIPO-DATO : X(01)
+  + 6 campos mas
+}
+
+entity "CURRENCY" as CUR {
+  * CUR-CODIGO : X(03) [PK]
+  --
+  CUR-EXCHANGE-RATE-BUY : COMP-3
+  CUR-EXCHANGE-RATE-SELL : COMP-3
+  CUR-STATUS : X(01)
+  + 8 campos mas
+}
+
+entity "SECURITY" as SEC {
+  * SEC-SEQ : 9(10) [PK]
+  --
+  SEC-USER-ID : X(08)
+  SEC-EVENT-TYPE : X(02)
+  SEC-RESULT : X(01)
+  + 7 campos mas
+}
+
+entity "MESSAGES" as MSG {
+  * MSG-ID : 9(08) [PK]
+  --
+  MSG-CUSTOMER-ID : X(10)
+  MSG-TYPE : X(02)
+  MSG-STATUS : X(01)
+  + 13 campos mas
+}
+
+'--- Relationships ---
+CUS ||--o{ AXR : "1 cliente\nN cuentas"
+ACT ||--o{ AXR : "1 cuenta\nN clientes"
+
+ACT ||--o{ TRN : "1 cuenta\nN transacciones"
+ACT ||--o{ CHQ : "1 cuenta\nN chequeras"
+
+CUS ||--o{ CRD : "1 cliente\nN tarjetas"
+ACT ||--o{ CRD : "1 cuenta\nN tarjetas"
+
+CUS ||--o{ LON : "1 cliente\nN prestamos"
+CUS ||--o{ LAP : "1 cliente\nN solicitudes"
+
+CUS ||--o{ DEP : "1 cliente\nN depositos"
+CUS ||--o{ TD : "1 cliente\nN CDs"
+
+BRH ||--o{ ACT : "1 sucursal\nN cuentas"
+BRH ||--o{ USR : "1 sucursal\nN usuarios"
+BRH ||--o{ TLR : "1 sucursal\nN tellers"
+BRH ||--o{ TRN : "1 sucursal\nN transacciones"
+
+LAP ||--o| LON : "1 solicitud\n1 prestamo"
+
+USR ||--o{ AUD : "1 usuario\nN auditorias"
+USR ||--o{ SEC : "1 usuario\nN eventos seg"
+
+TRN ||--o{ AUD : "1 transaccion\n1 auditoria"
+
+ACT ||--o{ GL : "1 cuenta\nN asientos"
+
+PAR -down-|> PAR : "parametros del sistema"
+RAT -down-|> RAT : "tabla de tasas"
+FEE -down-|> FEE : "tabla comisiones"
+CUR -down-|> CUR : "monedas/tc"
+
+note top of CUS
+  ~38 campos
+  16 niveles 88
+  1 COMP-3
+end note
+
+note top of ACT
+  ~32 campos
+  14 COMP-3
+  Saldos financieros
+end note
+
+@enduml

@@ -1,0 +1,198 @@
+@startuml
+!theme plain
+skinparam backgroundColor #FEFEFE
+skinparam defaultFontName Courier
+skinparam state {
+  BackgroundColor #F5F5F5
+  BorderColor #333333
+  FontName Courier
+}
+
+title "Diagrama de Navegacion - Sistema Bancario COBOL"
+
+state START : INICIO
+
+state BNK0001_LGN <<state>> {
+  state "BNK0001" as BNK0001
+  state "LOGIN" as LGN
+  BNK0001 : PF1=Ayuda
+  BNK0001 : PF12=Salir
+  BNK0001 : Enter=Validar
+}
+
+state BNK0001_PWD <<state>> {
+  state "BNK0001" as PWD
+  state "CAMBIO PASSWORD" as PWD_SCREEN
+  PWD : Enter=Actualizar
+  PWD : PF12=Cancelar
+}
+
+state COMMENU_ST <<state>> #LightBlue {
+  state "COMMENU / BNK0010" as MAIN
+  state "MENU PRINCIPAL" as MAIN_TITLE
+  MAIN : PF1 a PF12 seleccion modulo
+  MAIN : 60 opciones en 3 paginas
+}
+
+state CUSMNU <<state>> #LightGreen {
+  state "CUSMNU00" as CUS
+  state "MODULO CLIENTES" as CUS_TITLE
+  CUS : PF1=CUSSRH00 Busqueda
+  CUS : PF2=CUSINQ00 Consulta
+  CUS : PF3=CUSMNT00 Alta
+  CUS : PF4=CUSUPD00 Modificacion
+  CUS : PF5=CUSADR00 Direcciones
+  CUS : PF6=CUSREL00 Relaciones
+  CUS : PF7=CUSSTS00 Estatus
+}
+
+state ACTMNU <<state>> #LightYellow {
+  state "ACTMNU00" as ACT
+  state "MODULO CUENTAS" as ACT_TITLE
+  ACT : PF1=ACTINQ00 Consulta
+  ACT : PF2=ACTOPN00 Apertura
+  ACT : PF3=ACTUPD00 Modificacion
+  ACT : PF4=ACTCLS00 Cierre
+  ACT : PF5=ACTFRZ00 Congelar
+  ACT : PF6=ACTBAL00 Saldo
+  ACT : PF7=ACTSTM00 Estado Cta
+}
+
+state TLRMNU <<state>> #LightPink {
+  state "TLRMNU00" as TLR
+  state "MODULO CAJA" as TLR_TITLE
+  TLR : PF1=TLRSGN00 Apertura
+  TLR : PF2=TLRDEP00 Deposito
+  TLR : PF3=TLRWTH00 Retiro
+  TLR : PF4=TLRTRF00 Transferencia
+  TLR : PF5=TLRPYM00 Pago
+  TLR : PF6=TLRCHE00 Cheque
+  TLR : PF7=TLRSMG00 Resumen
+}
+
+state LONMNU <<state>> #LightCyan {
+  state "LONMNU00" as LON
+  state "MODULO PRESTAMOS" as LON_TITLE
+  LON : PF1=LONINQ00 Consulta
+  LON : PF2=LONAPL00 Solicitud
+  LON : PF3=LONAPV00 Aprobacion
+  LON : PF4=LONDIS00 Desembolso
+  LON : PF5=LONPYM00 Pago
+  LON : PF6=LONAMR00 Amortizacion
+  LON : PF7=LONDEL00 Mora
+}
+
+state DEPMNU <<state>> #LightGray {
+  state "DEPMNU00" as DEP
+  state "MODULO DEPOSITOS" as DEP_TITLE
+  DEP : PF1=DEPINQ00 Consulta
+  DEP : PF2=DEPOPN00 Apertura
+  DEP : PF3=DEPINT00 Tasas
+  DEP : PF4=DEPWTH00 Retiros
+  DEP : PF5=DEPSTM00 Estado
+  DEP : PF6=DEPREN00 Renovacion
+}
+
+state TDMNU <<state>> #LightCoral {
+  state "TDMNU000" as TD
+  state "MODULO PLAZO FIJO" as TD_TITLE
+  TD : PF1=TDOPN000 Apertura CD
+  TD : PF2=TDINQ000 Consulta CD
+  TD : PF3=TDCLS000 Liquidacion
+  TD : PF4=TDINT000 Interes CD
+}
+
+state FTMNU <<state>> #LightSalmon {
+  state "FTMNU000" as FT
+  state "MODULO TRANSFERENCIAS" as FT_TITLE
+  FT : PF1=FTINT000 Interna
+  FT : PF2=FTWIR000 Wire
+  FT : PF3=FTACH000 ACH
+  FT : PF4=FTSTS000 Estado
+}
+
+state BCHMNU <<state>> #Lavender {
+  state "BCHMNU00" as BCH
+  state "MODULO BATCH" as BCH_TITLE
+  BCH : PF1=BCHDAY00 Cierre Diario
+  BCH : PF2=BCHMTH00 Cierre Mensual
+  BCH : PF3=BCHINT00 Intereses
+  BCH : PF4=BCHGLI00 GL
+  BCH : PF5=BCHODO00 Sobregiro
+  BCH : PF6=BCHFEE00 Comisiones
+}
+
+state RPTMNU <<state>> #MistyRose {
+  state "RPTMNU00" as RPT
+  state "MODULO REPORTES" as RPT_TITLE
+  RPT : PF1=RPTBAL00 Balance
+  RPT : PF2=RPTTXN00 Transacciones
+  RPT : PF3=RPTDEL00 Cartera Vencida
+  RPT : PF4=RPTTLR00 Cuadre Caja
+  RPT : PF5=RPTGLB00 Trial Balance
+  RPT : PF6=RPTREG00 Regulatorios
+}
+
+state SECMNU <<state>> #Honeydew {
+  state "SECMNU00" as SEC
+  state "MODULO SEGURIDAD" as SEC_TITLE
+  SEC : PF1=SECUSR00 Usuarios
+  SEC : PF2=SECPWD00 Password
+  SEC : PF3=SECAUD00 Auditoria
+}
+
+state AYUDA : COMHELP\nAyuda Contextual
+state SALIR : SECSGO00\nSalir del Sistema
+
+START --> BNK0001_LGN
+BNK0001_LGN --> COMMENU_ST : Login OK
+BNK0001_LGN --> BNK0001_PWD : Password expirado
+BNK0001_PWD --> COMMENU_ST : Cambio OK
+BNK0001_PWD --> BNK0001_LGN : PF12 Cancelar
+
+COMMENU_ST --> CUSMNU : PF1\nCALL CUSMNU00
+COMMENU_ST --> ACTMNU : PF2\nCALL ACTMNU00
+COMMENU_ST --> TLRMNU : PF3\nCALL TLRMNU00
+COMMENU_ST --> LONMNU : PF4\nCALL LONMNU00
+COMMENU_ST --> DEPMNU : PF5\nCALL DEPMNU00
+COMMENU_ST --> TDMNU : PF6\nCALL TDMNU000
+COMMENU_ST --> FTMNU : PF7\nCALL FTMNU000
+COMMENU_ST --> BCHMNU : PF8\nCALL BCHMNU00
+COMMENU_ST --> RPTMNU : PF9\nCALL RPTMNU00
+COMMENU_ST --> SECMNU : PF10\nCALL SECMNU00
+COMMENU_ST --> AYUDA : PF11\nCALL COMHELP
+COMMENU_ST --> SALIR : PF12\nCALL SECSGO00
+
+'--- PF12 return paths ---
+CUSMNU --> COMMENU_ST : PF12 Retorno
+ACTMNU --> COMMENU_ST : PF12 Retorno
+TLRMNU --> COMMENU_ST : PF12 Retorno
+LONMNU --> COMMENU_ST : PF12 Retorno
+DEPMNU --> COMMENU_ST : PF12 Retorno
+TDMNU --> COMMENU_ST : PF12 Retorno
+FTMNU --> COMMENU_ST : PF12 Retorno
+BCHMNU --> COMMENU_ST : PF12 Retorno
+RPTMNU --> COMMENU_ST : PF12 Retorno
+SECMNU --> COMMENU_ST : PF12 Retorno
+
+'--- Internal CALLs from menus ---
+CUSMNU --> AYUDA : PF11
+ACTMNU --> AYUDA : PF11
+TLRMNU --> AYUDA : PF11
+LONMNU --> AYUDA : PF11
+DEPMNU --> AYUDA : PF11
+TDMNU --> AYUDA : PF11
+FTMNU --> AYUDA : PF11
+BCHMNU --> AYUDA : PF11
+RPTMNU --> AYUDA : PF11
+SECMNU --> AYUDA : PF11
+
+note right of COMMENU_ST
+  **Convenciones:**
+  PF11 = Ayuda contextual
+  PF12 = Retorno al CALLER
+  CLEAR = Limpiar pantalla
+  Enter = Confirmar
+end note
+
+@enduml
