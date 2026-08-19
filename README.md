@@ -116,7 +116,7 @@ Búsqueda: `similaritySearch(topK=12,threshold=0.25)` → <5 hits → fallback I
 
 | Categoría | Limitación |
 |---|---|
-| **Conectividad** | Solo PostgreSQL local (pg_catalog). Sin drivers Sybase/MSSQL/Oracle reales |
+| **Conectividad** | Multi-motor: PostgreSQL (completo) + MSSQL + Oracle (completos) + Sybase ASE (core). Drivers vía `app.databases.connections.*`; selección por `X-Engine` header o campo `engine` |
 | **Operaciones** | Solo lectura. No ejecuta DDL/DML, no migra datos reales |
 | **Seguridad** | Auth JWT HMAC autogenerado + API keys + OIDC/Keycloak (fallback JWKS); RBAC de tools por rol (READONLY/DOC/ADMIN); CORS allowlist configurable |
 | **Formatos** | Solo texto. Sin imágenes/audio. Sin file upload en chat |

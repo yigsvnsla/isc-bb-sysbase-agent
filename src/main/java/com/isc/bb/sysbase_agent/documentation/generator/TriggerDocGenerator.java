@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 import com.isc.bb.sysbase_agent.documentation.model.DocumentContent;
 import com.isc.bb.sysbase_agent.documentation.model.DocumentMeta;
 import com.isc.bb.sysbase_agent.documentation.model.DocumentType;
+import com.isc.bb.sysbase_agent.db.SchemaObjects;
 import com.isc.bb.sysbase_agent.tools.PostgresTools;
 
 @Component
@@ -24,7 +25,7 @@ public class TriggerDocGenerator {
         this.postgresTools = postgresTools;
     }
 
-    public DocumentContent generate(PostgresTools.TriggerRef trigger) {
+    public DocumentContent generate(SchemaObjects.TriggerRef trigger) {
         var definition = postgresTools.getTriggerDefinition(trigger.schema(), trigger.name());
 
         var slug = trigger.schema() + "_" + trigger.name();

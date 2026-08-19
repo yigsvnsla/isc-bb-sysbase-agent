@@ -11,8 +11,8 @@ import org.springframework.stereotype.Component;
 import com.isc.bb.sysbase_agent.documentation.model.DocumentContent;
 import com.isc.bb.sysbase_agent.documentation.model.DocumentMeta;
 import com.isc.bb.sysbase_agent.documentation.model.DocumentType;
-import com.isc.bb.sysbase_agent.tools.PostgresTools.ColumnDef;
-import com.isc.bb.sysbase_agent.tools.PostgresTools.ViewRef;
+import com.isc.bb.sysbase_agent.db.SchemaObjects.ColumnDef;
+import com.isc.bb.sysbase_agent.db.SchemaObjects.ViewRef;
 
 @Component
 public class ViewDocGenerator {

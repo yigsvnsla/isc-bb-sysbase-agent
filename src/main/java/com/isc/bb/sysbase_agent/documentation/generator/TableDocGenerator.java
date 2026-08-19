@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 import com.isc.bb.sysbase_agent.documentation.model.DocumentContent;
 import com.isc.bb.sysbase_agent.documentation.model.DocumentMeta;
 import com.isc.bb.sysbase_agent.documentation.model.DocumentType;
-import com.isc.bb.sysbase_agent.tools.PostgresTools.TableInfo;
+import com.isc.bb.sysbase_agent.db.SchemaObjects.TableInfo;
 
 @Component
 public class TableDocGenerator {

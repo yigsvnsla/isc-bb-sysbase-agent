@@ -20,7 +20,7 @@ public class AgentHandler {
 
     public ServerResponse chat(ServerRequest req) throws Exception {
         var body = req.body(ChatRequest.class);
-        var response = agentService.chat(body.conversationId(), body.message());
+        var response = agentService.chat(body.conversationId(), body.message(), body.engine());
         return ServerResponse.ok()
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(new ChatResponse(response));

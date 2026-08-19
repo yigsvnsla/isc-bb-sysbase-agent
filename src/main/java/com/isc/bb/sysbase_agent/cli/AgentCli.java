@@ -20,9 +20,10 @@ public class AgentCli {
     @Command(name = "ask", description = "Pregunta al agente sobre stored procedures")
     public String ask(
             @Option(longName = "conv", description = "ID de conversación (opcional)") String conversationId,
-            @Option(longName = "msg", description = "Mensaje o pregunta") String message) {
+            @Option(longName = "msg", description = "Mensaje o pregunta") String message,
+            @Option(longName = "engine", description = "Motor de BD: postgres | <nombre configurado en app.databases.connections>") String engine) {
         var convId = conversationId != null ? conversationId : UUID.randomUUID().toString();
-        return agentService.chat(convId, message);
+        return agentService.chat(convId, message, engine);
     }
 
     @Command(name = "chat", description = "Inicia una conversación interactiva")

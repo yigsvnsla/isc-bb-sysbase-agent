@@ -72,7 +72,7 @@ public class OpenAiCompatController {
 
         var lineBuf = new StringBuilder();
 
-        var sseFlux = agentService.streamChat(convId, userMsg)
+        var sseFlux = agentService.streamChat(convId, userMsg, req.engine())
                 .map(chunk -> {
                     lineBuf.append(chunk);
                     var text = lineBuf.toString();

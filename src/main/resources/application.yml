@@ -103,6 +103,21 @@ app:
             ip-per-minute: 20
         # TODO(futuro): definir dominios reales de producción y fijar allowlist estricta.
         # TODO(futuro): scopes finos por API key (no solo roles).
+    databases:
+        default-engine: postgres
+        # Conexiones multi-motor (F1). El nombre "postgres" (reservado) usa el
+        # DataSource primario. Ejemplo:
+        # connections:
+        #   mssql-qa:
+        #     engine: mssql
+        #     url: jdbc:sqlserver://localhost:1433;databaseName=mi_db;encrypt=false
+        #     username: sa
+        #     password: changeme
+        #   oracle-prod:
+        #     engine: oracle
+        #     url: jdbc:oracle:thin:@//localhost:1521/FREEPDB1
+        #     username: system
+        #     password: changeme
     docs:
         active-publisher: docusaurus
         auto-index:

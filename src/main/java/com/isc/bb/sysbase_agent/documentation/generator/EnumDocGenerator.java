@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 import com.isc.bb.sysbase_agent.documentation.model.DocumentContent;
 import com.isc.bb.sysbase_agent.documentation.model.DocumentMeta;
 import com.isc.bb.sysbase_agent.documentation.model.DocumentType;
+import com.isc.bb.sysbase_agent.db.SchemaObjects;
 import com.isc.bb.sysbase_agent.tools.PostgresTools;
 
 @Component
@@ -24,7 +25,7 @@ public class EnumDocGenerator {
         this.postgresTools = postgresTools;
     }
 
-    public DocumentContent generate(PostgresTools.EnumRef enumRef) {
+    public DocumentContent generate(SchemaObjects.EnumRef enumRef) {
         var values = postgresTools.getEnumValues(enumRef.schema(), enumRef.name());
 
         var slug = enumRef.schema() + "_" + enumRef.name();

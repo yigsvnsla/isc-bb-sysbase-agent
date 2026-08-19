@@ -11,14 +11,14 @@ import org.springframework.stereotype.Component;
 import com.isc.bb.sysbase_agent.documentation.model.DocumentContent;
 import com.isc.bb.sysbase_agent.documentation.model.DocumentMeta;
 import com.isc.bb.sysbase_agent.documentation.model.DocumentType;
-import com.isc.bb.sysbase_agent.tools.PostgresTools;
+import com.isc.bb.sysbase_agent.db.SchemaObjects;
 
 @Component
 public class SequenceDocGenerator {
 
     private static final Logger log = LoggerFactory.getLogger(SequenceDocGenerator.class);
 
-    public DocumentContent generate(PostgresTools.SequenceRef seq) {
+    public DocumentContent generate(SchemaObjects.SequenceRef seq) {
         var slug = seq.schema() + "_" + seq.name();
         var meta = new DocumentMeta(
                 slug,

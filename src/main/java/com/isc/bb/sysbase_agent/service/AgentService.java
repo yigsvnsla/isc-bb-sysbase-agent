@@ -12,6 +12,8 @@ import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
 
 import com.isc.bb.sysbase_agent.audit.AuditRepository;
+import com.isc.bb.sysbase_agent.db.EngineContext;
+import com.isc.bb.sysbase_agent.db.EngineResolver;
 import com.isc.bb.sysbase_agent.router.ModelRouter;
 import com.isc.bb.sysbase_agent.router.RouterDecision;
 import com.isc.bb.sysbase_agent.router.Tier;
@@ -45,6 +47,7 @@ public class AgentService {
     private final Tracer tracer;
     private final ToolCallback[] toolCallbacks;
     private final ToolAccessGuard guard;
+    private final EngineResolver engineResolver;
 
     public AgentService(@Qualifier("chatClientCheap") ChatClient cheapClient,
                         @Qualifier("chatClientExpensive") ChatClient expensiveClient,
@@ -55,7 +58,8 @@ public class AgentService {
                         TokenBudgetService budget,
                         @Qualifier("otelTracer") Tracer tracer,
                         @Qualifier("agentToolCallbacks") ToolCallback[] toolCallbacks,
-                        ToolAccessGuard guard) {
+                        ToolAccessGuard guard,
+                        EngineResolver engineResolver) {
         this.cheapClient = cheapClient;
         this.expensiveClient = expensiveClient;
         this.router = router;
@@ -66,10 +70,25 @@ public class AgentService {
         this.tracer = tracer;
         this.toolCallbacks = toolCallbacks;
         this.guard = guard;
+        this.engineResolver = engineResolver;
     }
 
     public String chat(String conversationId, String message) {
-        log.debug("→ chat: conv={}, msg={}", conversationId, message);
+        return chat(conversationId, message, null);
+    }
+
+    public String chat(String conversationId, String message, String engine) {
+        var resolved = engineResolver.resolve(conversationId, engine, requestHeader("X-Engine"));
+        EngineContext.set(resolved);
+        log.debug("→ chat: conv={}, engine={}, msg={}", conversationId, resolved, message);
+        try {
+            return doChat(conversationId, message);
+        } finally {
+            EngineContext.clear();
+        }
+    }
+
+    private String doChat(String conversationId, String message) {
         var traceId = UUID.randomUUID().toString();
         try {
             var attrs = RequestContextHolder.getRequestAttributes();
@@ -122,6 +141,11 @@ public class AgentService {
     public Flux<String> streamChat(String conversationId, String message) {
         log.debug("→ stream(sync-fallback): conv={}, msg={}", conversationId, message);
         return Mono.fromCallable(() -> chat(conversationId, message))
+                .flatMapMany(Mono::just);
+    }
+
+    public Flux<String> streamChat(String conversationId, String message, String engine) {
+        return Mono.fromCallable(() -> chat(conversationId, message, engine))
                 .flatMapMany(Mono::just);
     }
 
@@ -184,6 +208,17 @@ public class AgentService {
         } catch (Exception e) {
             return null;
         }
+    }
+
+    private String requestHeader(String name) {
+        try {
+            var attrs = RequestContextHolder.getRequestAttributes();
+            if (attrs instanceof org.springframework.web.context.request.ServletRequestAttributes sra) {
+                return sra.getRequest().getHeader(name);
+            }
+        } catch (Exception ignored) {
+        }
+        return null;
     }
 
     private String currentRole() {

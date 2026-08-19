@@ -8,7 +8,8 @@ public record OpenAiChatRequest(
     String model,
     List<Message> messages,
     Boolean stream,
-    @JsonAlias("conversation_id") String conversationId
+    @JsonAlias("conversation_id") String conversationId,
+    String engine
 ) {
     public record Message(String role, String content) {}
 }

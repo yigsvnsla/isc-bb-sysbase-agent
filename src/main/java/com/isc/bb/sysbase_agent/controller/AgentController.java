@@ -22,7 +22,7 @@ public class AgentController {
 
     @PostMapping("/chat")
     public ResponseEntity<ChatResponse> chat(@RequestBody ChatRequest req) {
-        var response = agentService.chat(req.conversationId(), req.message());
+        var response = agentService.chat(req.conversationId(), req.message(), req.engine());
         return ResponseEntity.ok(new ChatResponse(response));
     }
 
@@ -32,7 +32,7 @@ public class AgentController {
         return ResponseEntity.noContent().build();
     }
 
-    public record ChatRequest(String conversationId, String message) {
+    public record ChatRequest(String conversationId, String message, String engine) {
     }
 
     public record ChatResponse(String content) {

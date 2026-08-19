@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 import com.isc.bb.sysbase_agent.documentation.model.DocumentContent;
 import com.isc.bb.sysbase_agent.documentation.model.DocumentMeta;
 import com.isc.bb.sysbase_agent.documentation.model.DocumentType;
+import com.isc.bb.sysbase_agent.db.SchemaObjects;
 import com.isc.bb.sysbase_agent.tools.PostgresTools;
 
 @Component
@@ -24,7 +25,7 @@ public class CompositeTypeDocGenerator {
         this.postgresTools = postgresTools;
     }
 
-    public DocumentContent generate(PostgresTools.CompositeTypeRef typeRef) {
+    public DocumentContent generate(SchemaObjects.CompositeTypeRef typeRef) {
         var attrs = postgresTools.getCompositeTypeAttrs(typeRef.schema(), typeRef.name());
 
         var slug = typeRef.schema() + "_" + typeRef.name();
