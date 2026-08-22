@@ -8,6 +8,9 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import com.isc.bb.sysbase_agent.audit.AuditRepository;
+
+import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -17,11 +20,17 @@ public class ApiKeyAuthFilter extends OncePerRequestFilter {
 
     private final ApiKeyRepository repository;
     private final boolean enabled;
+    private final AuditRepository audit;
+    private final MeterRegistry meters;
 
     public ApiKeyAuthFilter(ApiKeyRepository repository,
-                            @Value("${app.security.api-keys.enabled:true}") boolean enabled) {
+                            @Value("${app.security.api-keys.enabled:true}") boolean enabled,
+                            AuditRepository audit,
+                            MeterRegistry meters) {
         this.repository = repository;
         this.enabled = enabled;
+        this.audit = audit;
+        this.meters = meters;
     }
 
     @Override
@@ -64,8 +73,22 @@ public class ApiKeyAuthFilter extends OncePerRequestFilter {
                 // pisaría la auth con un 401 al ver el bearer no-JWT. Ocultar el header.
                 request = new BearerStrippingRequest(request);
             }
+        } else {
+            // Se presentó una key y no matcheó ninguna activa/vigente — a diferencia de
+            // "sin credencial", esto es una señal de credential-stuffing/brute-force que
+            // vale la pena distinguir en la auditoría (antes cascadeaba a un 401 genérico
+            // "método desconocido" vía el entry point de SecurityConfig).
+            recordFailedAttempt();
         }
         chain.doFilter(request, response);
+    }
+
+    private void recordFailedAttempt() {
+        try {
+            audit.recordAuth("api-key", null, false);
+            meters.counter("ai_auth_events_total", "method", "api-key", "result", "failure").increment();
+        } catch (Exception ignored) {
+        }
     }
 
     /** Wrapper que oculta el header Authorization una vez consumido como API key. */
@@ -107,6 +130,4 @@ public class ApiKeyAuthFilter extends OncePerRequestFilter {
         }
     }
 
-    // TODO(futuro): respuesta 401 inmediata con cabecera WWW-Authenticate cuando la key es inválida.
-    // TODO(futuro): auditoría de intentos fallidos de autenticación.
 }

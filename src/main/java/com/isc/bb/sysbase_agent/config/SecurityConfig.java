@@ -32,6 +32,7 @@ import com.isc.bb.sysbase_agent.security.ApiKeyRepository;
 import com.isc.bb.sysbase_agent.security.AsyncSecurityContextRestoreFilter;
 import com.isc.bb.sysbase_agent.security.AuthAuditFilter;
 import com.isc.bb.sysbase_agent.security.JwtDecoders;
+import com.isc.bb.sysbase_agent.security.JwtRevocationService;
 import com.isc.bb.sysbase_agent.security.RateLimitFilter;
 
 import io.micrometer.core.instrument.MeterRegistry;
@@ -71,8 +72,10 @@ public class SecurityConfig {
 
     @Bean
     ApiKeyAuthFilter apiKeyAuthFilter(ApiKeyRepository apiKeyRepository,
-                                      @Value("${app.security.api-keys.enabled:true}") boolean enabled) {
-        return new ApiKeyAuthFilter(apiKeyRepository, enabled);
+                                      @Value("${app.security.api-keys.enabled:true}") boolean enabled,
+                                      AuditRepository audit,
+                                      MeterRegistry meters) {
+        return new ApiKeyAuthFilter(apiKeyRepository, enabled, audit, meters);
     }
 
     /**
@@ -105,8 +108,9 @@ public class SecurityConfig {
                           @Value("${app.security.jwt.previous-secret:}") String previousSecret,
                           @Value("${app.security.jwt.key-id:current}") String keyId,
                           @Value("${app.security.jwt.previous-key-id:previous}") String previousKeyId,
-                          @Value("${app.security.oidc.issuer-uri:}") String oidcIssuer) {
-        var own = JwtDecoders.withKid(keyId, secret, previousKeyId, previousSecret);
+                          @Value("${app.security.oidc.issuer-uri:}") String oidcIssuer,
+                          JwtRevocationService revocations) {
+        var own = JwtDecoders.withKid(keyId, secret, previousKeyId, previousSecret, revocations::isRevoked);
         if (oidcIssuer == null || oidcIssuer.isBlank()) {
             return own;
         }

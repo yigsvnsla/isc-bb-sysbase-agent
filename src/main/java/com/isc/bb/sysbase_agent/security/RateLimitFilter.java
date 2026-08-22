@@ -2,11 +2,14 @@ package com.isc.bb.sysbase_agent.security;
 
 import java.io.IOException;
 import java.time.Duration;
+import java.util.Arrays;
+import java.util.List;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.util.matcher.IpAddressMatcher;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -22,15 +25,22 @@ public class RateLimitFilter extends OncePerRequestFilter {
     private final boolean enabled;
     private final int userPerMinute;
     private final int ipPerMinute;
+    private final List<IpAddressMatcher> trustedProxies;
 
     public RateLimitFilter(StringRedisTemplate redis,
                            @Value("${app.security.rate-limit.enabled:true}") boolean enabled,
                            @Value("${app.security.rate-limit.user-per-minute:60}") int userPerMinute,
-                           @Value("${app.security.rate-limit.ip-per-minute:20}") int ipPerMinute) {
+                           @Value("${app.security.rate-limit.ip-per-minute:20}") int ipPerMinute,
+                           @Value("${app.security.trusted-proxies:}") String trustedProxiesCsv) {
         this.redis = redis;
         this.enabled = enabled;
         this.userPerMinute = userPerMinute;
         this.ipPerMinute = ipPerMinute;
+        this.trustedProxies = Arrays.stream(trustedProxiesCsv.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isBlank())
+                .map(IpAddressMatcher::new)
+                .toList();
     }
 
     @Override
@@ -69,16 +79,32 @@ public class RateLimitFilter extends OncePerRequestFilter {
         return String.valueOf(System.currentTimeMillis() / 60_000);
     }
 
+    /**
+     * X-Forwarded-For solo se confía si la request llegó directamente de un proxy en
+     * {@code app.security.trusted-proxies} (sin esto, cualquier cliente directo puede
+     * spoofear el header y rotar IPs para saltarse el rate limit por IP).
+     */
     private String clientIp(HttpServletRequest request) {
-        var forwarded = request.getHeader("X-Forwarded-For");
-        if (forwarded != null && !forwarded.isBlank()) {
-            return forwarded.split(",")[0].trim();
+        var remoteAddr = request.getRemoteAddr();
+        if (isTrustedProxy(remoteAddr)) {
+            var forwarded = request.getHeader("X-Forwarded-For");
+            if (forwarded != null && !forwarded.isBlank()) {
+                return forwarded.split(",")[0].trim();
+            }
         }
-        return request.getRemoteAddr();
+        return remoteAddr;
+    }
+
+    private boolean isTrustedProxy(String remoteAddr) {
+        for (var matcher : trustedProxies) {
+            if (matcher.matches(remoteAddr)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     // TODO(futuro): Bucket4j token-bucket con almacén Redis para ráfagas suaves.
-    // TODO(futuro): confiar en X-Forwarded-For solo detrás de proxy de confianza (trust-proxy config).
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {

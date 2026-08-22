@@ -149,6 +149,5 @@ public class AuditedToolCallback implements ToolCallback {
         return null;
     }
 
-    // TODO(futuro): filtrar las tools del schema LLM por rol (mejor que rechazo en runtime).
     // TODO(futuro): detector post-hoc de tool-calls inyectados (LLM-judge sobre la cadena de llamadas).
 }

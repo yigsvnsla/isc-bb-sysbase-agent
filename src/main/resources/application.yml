@@ -101,6 +101,10 @@ app:
             enabled: true
             user-per-minute: 60
             ip-per-minute: 20
+        # IPs/CIDR de proxies confiables (ej. "10.0.0.5,10.0.1.0/24") — solo desde ahí se
+        # confía en X-Forwarded-For para el rate limit por IP. Vacío = nunca confiar en el
+        # header (cada request se limita por su IP real de conexión TCP).
+        trusted-proxies: ${TRUSTED_PROXIES:}
         # TODO(futuro): definir dominios reales de producción y fijar allowlist estricta.
         # TODO(futuro): scopes finos por API key (no solo roles).
     databases:

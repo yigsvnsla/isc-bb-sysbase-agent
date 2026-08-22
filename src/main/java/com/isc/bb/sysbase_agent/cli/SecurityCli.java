@@ -8,17 +8,22 @@ import org.springframework.shell.core.command.annotation.Option;
 import org.springframework.stereotype.Component;
 
 import com.isc.bb.sysbase_agent.security.ApiKeyRepository;
+import com.isc.bb.sysbase_agent.security.JwtRevocationService;
 import com.isc.bb.sysbase_agent.security.JwtTokenService;
+import com.nimbusds.jwt.SignedJWT;
 
 @Component
 public class SecurityCli {
 
     private final JwtTokenService tokenService;
     private final ApiKeyRepository apiKeyRepository;
+    private final JwtRevocationService revocations;
 
-    public SecurityCli(JwtTokenService tokenService, ApiKeyRepository apiKeyRepository) {
+    public SecurityCli(JwtTokenService tokenService, ApiKeyRepository apiKeyRepository,
+                       JwtRevocationService revocations) {
         this.tokenService = tokenService;
         this.apiKeyRepository = apiKeyRepository;
+        this.revocations = revocations;
     }
 
     @Command(name = "token-create", description = "Emite un JWT autogenerado (HMAC) para consumir la API")
@@ -29,6 +34,21 @@ public class SecurityCli {
         var token = tokenService.issue(subject != null ? subject : "cli-user",
                 role != null ? role.toUpperCase() : "READONLY");
         return token;
+    }
+
+    @Command(name = "token-revoke", description = "Revoca un JWT antes de su expiración natural (denylist en Redis)")
+    public String tokenRevoke(@Option(longName = "token", description = "El JWT completo a revocar") String token) {
+        try {
+            var claims = SignedJWT.parse(token).getJWTClaimsSet();
+            var jti = claims.getJWTID();
+            var exp = claims.getExpirationTime();
+            revocations.revoke(jti, exp != null ? exp.toInstant() : null);
+            return "Token revocado (jti=" + jti + ").";
+        } catch (IllegalArgumentException e) {
+            return "No se pudo revocar: " + e.getMessage();
+        } catch (Exception e) {
+            return "Token inválido, no se pudo parsear: " + e.getMessage();
+        }
     }
 
     @Command(name = "apikey-create", description = "Crea una API key (la key plana se muestra UNA sola vez)")

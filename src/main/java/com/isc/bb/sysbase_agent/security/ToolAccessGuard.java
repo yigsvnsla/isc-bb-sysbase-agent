@@ -27,6 +27,8 @@ public class ToolAccessGuard {
 
     /**
      * role == null → contexto local (CLI/Shell) = confianza total.
+     * Usado como backstop en {@link AuditedToolCallback#call}; el filtrado real del
+     * schema visible al LLM ocurre antes, en {@code AgentService.toolsForRole}.
      */
     public boolean canInvoke(String role, String toolName) {
         if (role == null) {
@@ -41,5 +43,4 @@ public class ToolAccessGuard {
     }
 
     // TODO(futuro): matriz de permisos configurable (propiedad YAML/BD) en vez de hardcode.
-    // TODO(futuro): filtrar las tools del schema LLM por rol (mejor que rechazo en runtime).
 }

@@ -37,6 +37,7 @@ public class JwtTokenService {
                     .subject(subject)
                     .claim("role", role)
                     .issuer("sysbase-agent")
+                    .jwtID(java.util.UUID.randomUUID().toString())
                     .issueTime(new Date())
                     .expirationTime(new Date(System.currentTimeMillis() + ttl.toMillis()))
                     .build();
@@ -52,6 +53,5 @@ public class JwtTokenService {
         }
     }
 
-    // TODO(futuro): revocación de tokens (denylist en Redis) — hoy stateless.
     // TODO(futuro): incluir claims de tenant/scopes cuando exista multi-tenant.
 }

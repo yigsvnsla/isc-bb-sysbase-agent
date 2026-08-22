@@ -6,11 +6,16 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
 
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
+import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
+import org.springframework.security.oauth2.core.OAuth2Error;
+import org.springframework.security.oauth2.core.OAuth2TokenValidatorResult;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.JwtValidators;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 
 import com.nimbusds.jose.JWSAlgorithm;
@@ -39,6 +44,13 @@ public final class JwtDecoders {
     /** Decoder por kid: token→kid→clave; sin kid/desconocido → prueba todas en orden. */
     public static JwtDecoder withKid(String currentKid, String currentSecret,
                                      String previousKid, String previousSecret) {
+        return withKid(currentKid, currentSecret, previousKid, previousSecret, null);
+    }
+
+    /** Igual que {@link #withKid(String, String, String, String)} más chequeo de revocación por `jti`. */
+    public static JwtDecoder withKid(String currentKid, String currentSecret,
+                                     String previousKid, String previousSecret,
+                                     Predicate<String> isRevoked) {
         var keys = new LinkedHashMap<String, SecretKey>();
         keys.put(currentKid, key(currentSecret));
         if (previousSecret != null && !previousSecret.isBlank()) {
@@ -68,7 +80,17 @@ public final class JwtDecoders {
         };
         ConfigurableJWTProcessor<SecurityContext> processor = new DefaultJWTProcessor<>();
         processor.setJWSKeySelector(selector);
-        return new NimbusJwtDecoder(processor);
+        var decoder = new NimbusJwtDecoder(processor);
+        if (isRevoked != null) {
+            decoder.setJwtValidator(new DelegatingOAuth2TokenValidator<>(JwtValidators.createDefault(), jwt -> {
+                if (isRevoked.test(jwt.getId())) {
+                    return OAuth2TokenValidatorResult.failure(
+                            new OAuth2Error("invalid_token", "Token revocado", null));
+                }
+                return OAuth2TokenValidatorResult.success();
+            }));
+        }
+        return decoder;
     }
 
     private static SecretKey key(String secret) {
