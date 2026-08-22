@@ -136,6 +136,7 @@ app:
             dir: ${WORM_DIR:data/worm}
             cron: "0 0 2 * * *"
             batch-size: 500
+            hmac-secret: ${WORM_HMAC_SECRET:dev-only-worm-hmac-secret-cambiar-en-produccion-32b}
 
 logging:
     level:

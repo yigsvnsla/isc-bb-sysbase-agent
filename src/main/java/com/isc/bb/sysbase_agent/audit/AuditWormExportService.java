@@ -5,10 +5,12 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.security.MessageDigest;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,9 +23,11 @@ import tools.jackson.databind.ObjectMapper;
 
 /**
  * Export WORM de ai_audit: vuelca los eventos viejos a archivos JSONL
- * append-only con hash chain (SHA-256). Cada línea encadena el hash de la
+ * append-only con hash chain (HMAC-SHA256). Cada línea encadena el HMAC de la
  * anterior; el purge solo elimina eventos marcados como exportados, de modo
- * que nada se borra sin evidencia inmutable previa.
+ * que nada se borra sin evidencia inmutable previa. Se usa HMAC (no SHA-256
+ * plano) para que recalcular la cadena requiera conocer `app.audit.worm.hmac-secret`
+ * — un atacante con solo acceso de escritura al filesystem no puede falsificarla.
  */
 @Service
 public class AuditWormExportService {
@@ -36,19 +40,22 @@ public class AuditWormExportService {
     private final Path wormDir;
     private final boolean enabled;
     private final int batchSize;
+    private final SecretKeySpec hmacKey;
 
     public AuditWormExportService(AuditRepository audit,
                                   ObjectMapper objectMapper,
                                   MeterRegistry meters,
                                   @Value("${app.audit.worm.dir:data/worm}") String wormDir,
                                   @Value("${app.audit.worm.enabled:true}") boolean enabled,
-                                  @Value("${app.audit.worm.batch-size:500}") int batchSize) {
+                                  @Value("${app.audit.worm.batch-size:500}") int batchSize,
+                                  @Value("${app.audit.worm.hmac-secret}") String hmacSecret) {
         this.audit = audit;
         this.objectMapper = objectMapper;
         this.meters = meters;
         this.wormDir = Path.of(wormDir);
         this.enabled = enabled;
         this.batchSize = batchSize;
+        this.hmacKey = new SecretKeySpec(hmacSecret.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
     }
 
     @Scheduled(cron = "${app.audit.worm.cron:0 0 2 * * *}")
@@ -122,19 +129,20 @@ public class AuditWormExportService {
     private String hashChain(String seed, List<String> lines) {
         String h = seed;
         for (var line : lines) {
-            h = sha256(h == null ? line : h + "|" + line);
+            h = hmac(h == null ? line : h + "|" + line);
         }
         return h;
     }
 
     private String hash(String prevHash, String payload) {
-        return sha256(prevHash == null ? payload : prevHash + "|" + payload);
+        return hmac(prevHash == null ? payload : prevHash + "|" + payload);
     }
 
-    private String sha256(String input) {
+    private String hmac(String input) {
         try {
-            var digest = MessageDigest.getInstance("SHA-256");
-            var bytes = digest.digest(input.getBytes(StandardCharsets.UTF_8));
+            var mac = Mac.getInstance("HmacSHA256");
+            mac.init(hmacKey);
+            var bytes = mac.doFinal(input.getBytes(StandardCharsets.UTF_8));
             var sb = new StringBuilder();
             for (byte b : bytes) {
                 sb.append(String.format("%02x", b));

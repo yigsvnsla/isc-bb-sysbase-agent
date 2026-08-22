@@ -4,6 +4,9 @@ on:
   push:
     branches: [ main, master ]
   pull_request:
+  schedule:
+    - cron: '0 3 * * *'
+  workflow_dispatch:
 
 jobs:
   build:
@@ -63,3 +66,27 @@ jobs:
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: trivy-results.sarif
+
+  # Suites pesadas/lentas (imágenes multi-motor ~1.5GB, test de carga) que no
+  # deben bloquear cada PR: corren solo nightly o a pedido (workflow_dispatch).
+  nightly-extended:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 26
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '26'
+          cache: maven
+
+      - name: Multi-engine dialect tests (MSSQL / Oracle / Sybase)
+        env:
+          RUN_MULTIDB_TESTS: 'true'
+        run: ./mvnw -B -ntp test -Dtest=MultiDbDialectE2ETest -DexcludedGroups=
+
+      - name: Load test
+        run: ./mvnw -B -ntp test -Dtest=LoadE2ETest -DexcludedGroups=

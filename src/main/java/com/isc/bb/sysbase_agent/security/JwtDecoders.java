@@ -13,6 +13,7 @@ import javax.crypto.spec.SecretKeySpec;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 
+import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jose.proc.JWSKeySelector;
 import com.nimbusds.jose.proc.SecurityContext;
@@ -46,6 +47,12 @@ public final class JwtDecoders {
         var ordered = new ArrayList<>(keys.values());
 
         JWSKeySelector<SecurityContext> selector = (JWSHeader header, SecurityContext context) -> {
+            // Defensa en profundidad: solo HS256 es válido hoy (todas las claves son
+            // simétricas); rechazar cualquier otro alg evita sorpresas si algún día se
+            // agrega una clave de otro tipo (p.ej. RS256) sin restringir explícitamente.
+            if (!JWSAlgorithm.HS256.equals(header.getAlgorithm())) {
+                return new ArrayList<Key>();
+            }
             var kid = header.getKeyID();
             if (kid != null && keys.containsKey(kid)) {
                 var out = new ArrayList<Key>();
