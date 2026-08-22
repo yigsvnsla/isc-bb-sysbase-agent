@@ -35,6 +35,7 @@
 
 ### FASE 0 — Preparación
 - [x] **0.1 Inventario del Codebase**: Extraído grafo de dependencias, llamadas (CALL), copybooks compartidos y accesos a archivos (.DAT).
+- [x] **0.1b Audit y hardening del preview Angular (2026-08-21/22)**: revisión de `src/app/*` (infra escrita a mano) y `packages/core`. Corregido: `screen-viewer.component.ts` ya no deja pantalla en blanco ante un navTarget sin registrar (muestra "no disponible en este preview" — cubre el bug de `COMSCRN`/`COMDATE`/`COMVALF`/`BCHMNU00`/`AUDTRL00` documentado abajo); `provideZonelessChangeDetection()` explícito en `app.config.ts` (la app ya corría así de facto, sin declararlo); `resetTestingModule()` en `test-setup.ts` (Vitest no resetea el TestBed entre tests como sí lo hace Jasmine/Karma). 2 tests de regresión nuevos en `navigation-flow.spec.ts`. Build (`ng build`) y suite (`vitest`, 6/6) verificados en verde. Los gaps que dependen del generador externo ("el ensamblador") quedaron documentados en Escalaciones y Bloqueos, no se tocó `src/screens/**` (auto-generado).
 - [ ] **0.2 Especificaciones de Portabilidad**: Subagente `analyst` despachado (Conv ID: `6827abaa-6dd9-4c50-a0de-207ef113335e`) para generar `PORTING.md`, `LIFETIMES.tsv`, `BOUNDARIES.md`, `IMPROVEMENTS.md`.
 - [ ] **0.3 Partición y Módulos Angular**: Definición de la arquitectura destino y eliminación de ciclos de dependencias.
 - [ ] **0.4 Port Piloto (4 pantallas representativas)**:
