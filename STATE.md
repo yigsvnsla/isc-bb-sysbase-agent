@@ -47,7 +47,11 @@
 ---
 
 ## Escalaciones y Bloqueos
-- Ninguno en este momento.
+- **Audit `apps/preview-angular-spa` (2026-08-21)** — hallazgos que requieren al generador ("el ensamblador", pipeline ADG → `ui-spec.ts` → angular-gen, no presente en este repo) y por lo tanto no se pudieron corregir desde acá sin violar el contrato "Auto-generado — no editar":
+  - **Gap de generación real**: `BCHMNU00` y `AUDTRL00` deberían existir como pantallas (`BOUNDARIES.md` los lista en `BatchService`/`AuditService`) pero no están en `meta.json`/`registry.ts` — faltan por generar. `BCHMNU00.cbl` sí tiene `SCREEN SECTION` (es un menú interactivo real).
+  - **Correctamente excluidos pero rotos en navegación**: `COMSCRN`, `COMDATE`, `COMVALF` son subrutinas COBOL no interactivas (sin `SCREEN SECTION`) que correctamente NO deben ser pantallas — pero `navigation.ts` (auto-generado) igual los referencia como `routerLink` clickeables, generando dead-links. El generador debería dejar de emitir nav targets para `CALL`s a subrutinas no interactivas. Mitigado en el código escrito a mano (`screen-viewer.component.ts` ahora muestra "no disponible" en vez de pantalla en blanco), pero el link roto en el menú lateral sigue ahí hasta que se corrija la generación de `navigation.ts`.
+  - **Bug sistémico en las 82 pantallas generadas**: cada `.vm.ts` setea `vm.message()` en éxito/error de `submit()`, pero ningún `.component.html` lo renderiza — el usuario nunca ve feedback del formulario. Import de `MessageModule` presente pero sin uso real en el template. Requiere corregir la plantilla del ensamblador (no archivo por archivo).
+  - **Otros del generador** (menor prioridad, documentar como deuda conocida): KPIs de pantallas `menu` muestran `"0"` hardcodeado sin bind a ningún signal; 0/82 pantallas usan Reactive Forms pese a recomendarlo `IMPROVEMENTS.md` §2.1 (solo `ngModel` + validación "requerido", sin `pattern`/regex real aunque el comentario generado dice "PIC-derived"); sin atributos `aria-live`/`role="alert"` en mensajes de error (gap WCAG 2.1 AA vs `IMPROVEMENTS.md` §5); el campo `rendering: "ssr"/"spa"` de `ui-spec.ts`/`meta.json` no tiene ninguna infraestructura SSR real detrás (sin `@angular/ssr`, sin `server.ts`) — es vestigial hoy.
 
 ---
 
